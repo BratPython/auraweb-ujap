@@ -16,7 +16,13 @@ const auraRow = Array.from({ length: AURA_COUNT }, (_, i) => (
   <span key={i} className="hero-word">aura</span>
 ))
 
-export default function Landing({ activeMode, toggleMode }) {
+const MODE_OPTIONS = [
+  { id: 'light', label: 'Claro' },
+  { id: 'dark', label: 'Oscuro' },
+  { id: 'colorblind', label: 'Daltonico' }
+]
+
+export default function Landing({ activeMode, onModeChange }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const navigate = useNavigate()
 
@@ -38,16 +44,22 @@ export default function Landing({ activeMode, toggleMode }) {
         </div>
 
         <div className="header-right">
-          {/* iOS Style Minimalist Toggle */}
           <div className="theme-toggle-wrapper">
-            <button
-              className={`ios-toggle ${activeMode === 'dark' ? 'active' : ''}`}
-              onClick={toggleMode}
-              aria-label="Toggle theme"
-            >
-              <div className="ios-toggle-knob" />
-            </button>
-            <span className="theme-label">{activeMode === 'light' ? 'Modo Claro' : 'Modo Oscuro'}</span>
+            <div className="theme-segment" role="tablist" aria-label="Seleccion de modo de color">
+              {MODE_OPTIONS.map((mode) => (
+                <button
+                  key={mode.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeMode === mode.id}
+                  className={`theme-segment-btn${activeMode === mode.id ? ' active' : ''}`}
+                  onClick={() => onModeChange(mode.id)}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+            <span className="theme-label">Modo: {MODE_OPTIONS.find(m => m.id === activeMode)?.label || 'Claro'}</span>
           </div>
 
           <button
@@ -138,8 +150,8 @@ export default function Landing({ activeMode, toggleMode }) {
         </div>
         <div className="footer-col">
           <strong className="footer-title">Contacto</strong>
-          <span className="footer-text"><a href="https://wa.me/584244405113" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>WhatsApp: 0424-4405113</a><br></br>
-            Instagram: @theaura.a<br></br>
+          <span className="footer-text"><a href="https://wa.link/ajq4wy" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>WhatsApp: 0424-4405113</a><br></br>
+            <a href="https://www.instagram.com/theaura.a/" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>Instagram: @theaura.a</a><br></br>
             Horario<br></br>
             Lun - Vie: 8:00am - 6:00pm<br></br>
             Sab: 10:00am - 3:00pm<br></br>
@@ -147,11 +159,13 @@ export default function Landing({ activeMode, toggleMode }) {
         </div>
         <div className="footer-col">
           <strong className="footer-title">Enlaces</strong>
-          <span className="footer-text">Ver catálogo completo<br></br>
-
+          <span className="footer-text">
+            <a onClick={() => navigate('/catalogo')} style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}>
+              Ver catálogo completo
+            </a><br></br>
             Cómo comprar<br></br>
-
-            FaQ</span>
+            FaQ
+          </span>
         </div>
       </footer>
     </main >

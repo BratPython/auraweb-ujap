@@ -136,8 +136,15 @@ export default function Catalog() {
 
     return (
         <div className="page catalog-page">
-            <header className="catalog-header">
-                <h1 className="catalog-logo" onClick={() => navigate('/')}>Catálogo</h1>
+            <header className="site-header">
+                <div className="header-left">
+                    <div className="brand" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>aura</div>
+                    <nav className="nav-desktop">
+                        <a onClick={() => navigate('/')}>Inicio</a>
+                        <a className="nav-link-btn" onClick={() => navigate('/catalogo')}>Catálogo</a>
+                        <a href="https://wa.link/ajq4wy" target="_blank" rel="noreferrer">WhatsApp</a>
+                    </nav>
+                </div>
             </header>
 
             <div className="catalog-tabs">
