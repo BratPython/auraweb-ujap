@@ -1,0 +1,86 @@
+import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { WHATSAPP_URL } from '../../config/constants'
+
+export default function Header({ children, currentPage }) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const navigate = useNavigate()
+
+  const navLinks = [
+    { label: 'Inicio', path: '/', id: 'home' },
+    { label: 'Catálogo', path: '/catalogo', id: 'catalog' },
+    { label: 'WhatsApp', href: WHATSAPP_URL, id: 'whatsapp' },
+  ]
+
+  return (
+    <>
+      <div
+        className={`nav-overlay${menuOpen ? ' open' : ''}`}
+        onClick={() => setMenuOpen(false)}
+      />
+
+      <header className="site-header">
+        <div className="header-left">
+          <div className="brand" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>aura</div>
+          <nav className="nav-desktop">
+            {navLinks.map((link) =>
+              link.href ? (
+                <a key={link.id} href={link.href} target="_blank" rel="noreferrer">
+                  {link.label}
+                </a>
+              ) : (
+                <a
+                  key={link.id}
+                  className={currentPage === link.id ? 'nav-link-btn' : ''}
+                  onClick={() => navigate(link.path)}
+                >
+                  {link.label}
+                </a>
+              )
+            )}
+          </nav>
+        </div>
+
+        <div className="header-right">
+          {children}
+
+          <button
+            className={`hamburger${menuOpen ? ' open' : ''}`}
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Toggle menu"
+          >
+            <span /><span /><span />
+          </button>
+        </div>
+
+        <nav className={`nav-mobile${menuOpen ? ' open' : ''}`}>
+          {navLinks.map((link) =>
+            link.href ? (
+              <a
+                key={link.id}
+                href={link.href}
+                onClick={() => setMenuOpen(false)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {link.label}
+              </a>
+            ) : (
+              <a
+                key={link.id}
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault()
+                  setMenuOpen(false)
+                  navigate(link.path)
+                }}
+              >
+                {link.label}
+              </a>
+            )
+          )}
+        </nav>
+      </header>
+    </>
+  )
+}

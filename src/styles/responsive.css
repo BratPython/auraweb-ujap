@@ -1,0 +1,107 @@
+/* ============================================================
+   Responsive Breakpoints
+   ============================================================ */
+
+@media (max-width: 1024px) {
+  .admin-layout {
+    grid-template-columns: 380px 1fr;
+  }
+
+  .admin-v2-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-v2-sidebar {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-left {
+    gap: 16px;
+  }
+
+  .nav-desktop {
+    display: none;
+  }
+
+  .hamburger {
+    display: flex;
+  }
+
+  .nav-mobile {
+    display: flex;
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 280px;
+    height: 100vh;
+    flex-direction: column;
+    background: var(--bg);
+    padding: 80px 24px 24px;
+    box-shadow: -4px 0 30px rgba(0, 0, 0, .1);
+    transition: right var(--transition);
+    z-index: 105;
+    gap: 8px;
+  }
+
+  .nav-mobile.open {
+    right: 0;
+  }
+
+  .nav-mobile a {
+    padding: 12px;
+    font-size: 16px;
+    color: var(--color-nav);
+    font-family: var(--font-nav);
+    background: rgba(128, 128, 128, .05);
+    border-radius: 6px;
+    text-align: center;
+  }
+
+  .theme-segment {
+    min-width: 205px;
+  }
+
+  .theme-segment-btn {
+    font-size: 11px;
+    padding: 7px 8px;
+  }
+
+  .admin-page {
+    overflow: auto;
+    padding: 16px;
+  }
+
+  .admin-layout {
+    grid-template-columns: 1fr;
+    height: auto !important;
+    padding: 0;
+  }
+
+  .scroller {
+    height: auto;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .site-footer {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    text-align: center;
+  }
+}
+
+@media (max-width: 900px) {
+  .product-detail-container {
+    grid-template-columns: 1fr;
+    gap: 30px;
+    padding: 0 20px;
+  }
+
+  .catalog-container {
+    padding: 0 20px;
+  }
+}

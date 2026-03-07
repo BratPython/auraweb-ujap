@@ -1,0 +1,53 @@
+import React, { useRef } from 'react'
+
+export default function CustomFontManager({ customFonts, uploadingFont, onUpload, onRemove }) {
+  const fileInputRef = useRef(null)
+
+  function handleFileChange(e) {
+    const file = e.target.files?.[0]
+    if (file) {
+      onUpload(file)
+    }
+    e.target.value = ''
+  }
+
+  return (
+    <div style={{ marginTop: 16, padding: 12, borderRadius: 8, background: 'rgba(128,128,128,.08)' }}>
+      <h5 style={{ margin: '0 0 8px 0' }}>Fuentes personalizadas</h5>
+      <button className="btn-upload" onClick={() => fileInputRef.current?.click()} disabled={uploadingFont}>
+        {uploadingFont ? 'Subiendo...' : 'Subir fuente local (.ttf, .otf, .woff)'}
+      </button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".ttf,.otf,.woff"
+        style={{ display: 'none' }}
+        onChange={handleFileChange}
+      />
+
+      {customFonts.length > 0 && (
+        <div style={{ marginTop: 10 }}>
+          {customFonts.map((f) => (
+            <div
+              key={f.name}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '6px 8px',
+                borderRadius: 6,
+                background: 'rgba(0,0,0,.04)',
+                marginBottom: 6,
+              }}
+            >
+              <span style={{ fontFamily: f.name }}>{f.name}</span>
+              <button className="btn-sm btn-sm-danger" onClick={() => onRemove(f.name)}>
+                Eliminar
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}

@@ -1,0 +1,203 @@
+/* ============================================================
+   Product Detail Page
+   ============================================================ */
+
+.product-detail-page {
+  padding-bottom: 60px;
+  display: flex;
+  flex-direction: column;
+}
+
+.product-detail-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 30px;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 40px;
+  align-items: start;
+  margin-top: 20px;
+}
+
+/* Photo Gallery */
+.product-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.main-image {
+  width: 100%;
+  aspect-ratio: 4/5;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: rgba(128, 128, 128, 0.05);
+}
+
+.main-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placeholder-detail {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 80px;
+  opacity: 0.1;
+}
+
+.thumbnail-strip {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 5px;
+}
+
+.thumb-container {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+  position: relative;
+  border: 2px solid transparent;
+  transition: border 0.2s;
+}
+
+.thumb-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumb-container:hover {
+  border-color: var(--accent);
+}
+
+.del-thumb-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.thumb-container:hover .del-thumb-btn {
+  opacity: 1;
+}
+
+.add-thumb-btn {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  border: 2px dashed rgba(128, 128, 128, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  color: rgba(128, 128, 128, 0.5);
+  transition: 0.2s;
+}
+
+.add-thumb-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(128, 128, 128, 0.05);
+}
+
+/* Editor Panel */
+.product-editor-panel {
+  padding: 30px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.detail-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 16px;
+  background: transparent;
+  outline: none;
+  transition: 0.2s;
+}
+
+.detail-input:focus {
+  background: rgba(128, 128, 128, 0.03);
+}
+
+input.detail-input {
+  font-size: 24px;
+  font-weight: 600;
+  font-family: var(--font-card-title);
+  padding: 8px 0;
+  border-bottom: 2px solid;
+  border-radius: 0;
+}
+
+.theme-override-box {
+  border: 1px dashed;
+  border-radius: var(--radius-sm);
+  padding: 15px;
+  margin-top: 10px;
+}
+
+.btn-save-detail {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  margin-top: 10px;
+}
+
+.btn-save-detail:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-save-detail:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 10px;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+  text-decoration: none;
+}
+
+.back-btn:hover {
+  opacity: 1;
+}

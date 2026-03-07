@@ -1,0 +1,81 @@
+/* ============================================================
+   CSS Custom Properties (Design Tokens)
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap');
+
+@font-face {
+  font-family: 'AuraLogo';
+  src: url('/Minecraft.ttf');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* Defaults injected by JS, fallbacks defined here just in case */
+  --bg: #f6f0e6;
+  --card: #efe7d0;
+  --accent: #d96b2d;
+  --accent-alt: #c44b6a;
+  --header-bg: #f6f0e6;
+  --btn-bg: #efe7d0;
+  --btn-hover: #d96b2d;
+
+  --color-brand: #2b2318;
+  --size-brand: 32px;
+  --font-brand: 'AuraLogo', Georgia, serif;
+  --color-nav: #2b2318;
+  --size-nav: 14px;
+  --font-nav: 'Inter', sans-serif;
+  --color-hero: #d96b2d;
+  --size-hero: clamp(48px, 10vw, 110px);
+  --font-hero: 'AuraLogo', Georgia, serif;
+  --color-hero-alt: #c44b6a;
+  --size-hero-alt: clamp(48px, 10vw, 110px);
+  --font-hero-alt: 'AuraLogo', Georgia, serif;
+  --color-title: #2b2318;
+  --size-title: clamp(22px, 4vw, 36px);
+  --font-title: 'Playfair Display', Georgia, serif;
+  --color-subtitle: #bfae90;
+  --size-subtitle: clamp(20px, 3.5vw, 30px);
+  --font-subtitle: 'Playfair Display', Georgia, serif;
+  --color-card-title: #bfae90;
+  --size-card-title: 16px;
+  --font-card-title: 'Inter', sans-serif;
+  --color-body: #2b2318;
+  --size-body: 16px;
+  --font-body: 'Inter', sans-serif;
+  --color-btn: #2b2318;
+  --size-btn: 14px;
+  --font-btn: 'Inter', sans-serif;
+  --color-btn-hover: #ffffff;
+  --size-btn-hover: 14px;
+  --font-btn-hover: 'Inter', sans-serif;
+  --color-footer-title: #ffffff;
+  --size-footer-title: 16px;
+  --font-footer-title: 'Inter', sans-serif;
+  --color-footer: #ffffff;
+  --size-footer: 14px;
+  --font-footer: 'Inter', sans-serif;
+
+  --banner-color-1: #c44b6a;
+  --banner-color-2: #d96b2d;
+  --font-banner: 'AuraLogo', Georgia, serif;
+  --size-banner: clamp(48px, 10vw, 110px);
+  --letter-banner: 1px;
+
+  --letter-title: 0px;
+  --letter-subtitle: 0px;
+  --letter-body: 0px;
+
+  /* Structure */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, .06);
+  --shadow-md: 0 8px 30px rgba(0, 0, 0, .10);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, .14);
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 28px;
+  --transition: .3s cubic-bezier(.4, 0, .2, 1);
+  --container: min(1200px, 92vw);
+}

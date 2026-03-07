@@ -1,0 +1,219 @@
+/* ============================================================
+   Content Sections: Discover, Services, CTA, Footer
+   ============================================================ */
+
+.discover {
+  padding: 60px 20px;
+  text-align: center;
+  animation: fadeUp .8s ease-out both;
+}
+
+.section-title {
+  font-family: var(--font-title);
+  font-size: var(--size-title);
+  color: var(--color-title);
+  letter-spacing: var(--letter-title);
+  font-weight: 400;
+  margin-bottom: 8px;
+}
+
+.brand-inline {
+  font-weight: 700;
+  font-family: var(--font-brand);
+  color: var(--accent);
+}
+
+.carousel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+  max-width: var(--container);
+  margin: 32px auto 0;
+  padding: 0 12px;
+}
+
+.product-card {
+  background: var(--card);
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  text-align: center;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+  animation: fadeUp .6s ease-out both;
+}
+
+.product-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: var(--shadow-lg);
+}
+
+.product-card img {
+  width: 100%;
+  aspect-ratio: 4/5;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  transition: var(--transition);
+}
+
+.product-card:hover img {
+  transform: scale(1.04);
+}
+
+.card-title {
+  margin-top: 14px;
+  color: var(--color-card-title);
+  font-size: var(--size-card-title);
+  font-family: var(--font-card-title);
+  font-weight: 500;
+}
+
+/* Catalog CTA */
+.catalog-cta {
+  padding: 40px 20px;
+  text-align: center;
+  animation: fadeUp .7s ease-out both;
+}
+
+.catalog-image {
+  height: 260px;
+  border-radius: var(--radius-md);
+  margin: 0 auto;
+  width: min(800px, 90%);
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.catalog-image::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, .35);
+  border-radius: inherit;
+}
+
+.cta {
+  position: relative;
+  z-index: 2;
+  background: var(--btn-bg);
+  color: var(--color-btn);
+  font-family: var(--font-btn);
+  font-size: var(--size-btn);
+  border: none;
+  padding: 14px 34px;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+
+.cta:hover {
+  background: var(--btn-hover);
+  color: var(--color-btn-hover);
+  font-family: var(--font-btn-hover);
+  font-size: var(--size-btn-hover);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Services */
+.services {
+  padding: 60px 20px;
+  text-align: center;
+  animation: fadeUp .7s ease-out both;
+}
+
+.section-subtitle {
+  font-family: var(--font-subtitle);
+  font-size: var(--size-subtitle);
+  color: var(--color-subtitle);
+  letter-spacing: var(--letter-subtitle);
+  font-weight: 600;
+  margin-bottom: 28px;
+}
+
+.service-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 0 12px;
+}
+
+.service {
+  background: var(--card);
+  padding: 28px 20px;
+  border-radius: var(--radius-lg);
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.service::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, .08) 0%, transparent 60%);
+  opacity: 0;
+  transition: var(--transition);
+}
+
+.service:hover::before {
+  opacity: 1;
+}
+
+.service:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-md);
+}
+
+.service .icon {
+  font-size: 36px;
+  margin-bottom: 12px;
+  animation: float 3s ease-in-out infinite;
+}
+
+.body-text {
+  font-size: var(--size-body);
+  font-family: var(--font-body);
+  letter-spacing: var(--letter-body);
+  color: var(--color-body);
+  line-height: 1.7;
+  opacity: .85;
+}
+
+/* Footer */
+.site-footer {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  padding: 40px 28px;
+  background: var(--footer-bg, var(--accent));
+}
+
+.footer-title {
+  display: block;
+  margin-bottom: 8px;
+  font-family: var(--font-footer-title);
+  font-size: var(--size-footer-title);
+  color: var(--color-footer-title);
+}
+
+.footer-text {
+  font-family: var(--font-footer);
+  font-size: var(--size-footer);
+  color: var(--color-footer);
+  opacity: .95;
+  line-height: 1.6;
+}
