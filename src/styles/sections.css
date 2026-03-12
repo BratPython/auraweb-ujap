@@ -23,14 +23,30 @@
   color: var(--accent);
 }
 
-/* Discover Grid - Smaller cards like catalog */
-.discover-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 20px;
-  max-width: 700px;
+/* Discover Carousel - Smaller cards like catalog */
+.discover-carousel-wrapper {
+  position: relative;
+  max-width: 720px;
   margin: 32px auto 0;
   padding: 0 12px;
+}
+
+.discover-carousel {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  gap: 20px;
+}
+
+.discover-carousel.is-animating {
+  animation: discoverSwap 0.45s ease-out both;
+}
+
+.discover-carousel.is-animating.left {
+  --discover-shift: -14px;
+}
+
+.discover-carousel.is-animating.right {
+  --discover-shift: 14px;
 }
 
 .discover-card {
@@ -95,6 +111,83 @@
   font-size: 13px;
   color: var(--accent);
   font-weight: 600;
+}
+
+.discover-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: var(--card, #efe7d0);
+  color: var(--color-body, #2b2318);
+  font-size: 22px;
+  font-weight: 300;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  line-height: 1;
+}
+
+.discover-arrow:hover {
+  background: var(--accent);
+  color: #fff;
+  transform: translateY(-50%) scale(1.05);
+}
+
+.discover-arrow.left {
+  left: -8px;
+}
+
+.discover-arrow.right {
+  right: -8px;
+}
+
+@media (max-width: 720px) {
+  .discover-carousel {
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+    gap: 14px;
+  }
+
+  .discover-carousel-wrapper {
+    max-width: 520px;
+    padding: 0 6px;
+  }
+
+  .discover-card-info {
+    padding: 10px;
+  }
+
+  .discover-card-name {
+    font-size: 13px;
+  }
+
+  .discover-card-price {
+    font-size: 12px;
+  }
+
+  .discover-arrow {
+    width: 32px;
+    height: 32px;
+    font-size: 20px;
+  }
+}
+
+@keyframes discoverSwap {
+  0% {
+    opacity: 0;
+    transform: translateX(var(--discover-shift, 12px));
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 /* Catalog CTA */

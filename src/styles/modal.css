@@ -84,6 +84,12 @@
   border-color: var(--accent);
 }
 
+.fixed-textarea {
+  resize: none;
+  min-height: 90px;
+  max-height: 90px;
+}
+
 .row-flex {
   display: flex;
   gap: 15px;

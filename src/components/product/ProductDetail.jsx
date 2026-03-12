@@ -6,6 +6,7 @@ import ProductGallery from './ProductGallery'
 import ProductEditor from './ProductEditor'
 import { SkeletonDetail } from '../ui/LoadingSpinner'
 import { useAdminMode } from '../../hooks/useAdminMode'
+import ImageWithLoader from '../ui/ImageWithLoader'
 
 export default function ProductDetail() {
   const { id } = useParams()
@@ -15,14 +16,15 @@ export default function ProductDetail() {
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [uploadingImage, setUploadingImage] = useState(false)
+  const [imageUploading, setImageUploading] = useState(false)
+  const [imageUploadModal, setImageUploadModal] = useState(null)
+  const [saveStatus, setSaveStatus] = useState(null)
   const [mainIdx, setMainIdx] = useState(0)
 
   const [editName, setEditName] = useState('')
   const [editDesc, setEditDesc] = useState('')
   const [editPrice, setEditPrice] = useState('')
   const [agotado, setAgotado] = useState(false)
-  const [destacado, setDestacado] = useState(false)
 
   useEffect(() => {
     async function fetchProduct() {
@@ -35,11 +37,13 @@ export default function ProductDetail() {
         setEditDesc(data.descripcion || '')
         setEditPrice(data.precio || '')
         setAgotado(!!data.agotado)
-        setDestacado(!!data.destacado)
       } catch (err) {
         console.error('Error fetching product details:', err)
-        alert('Producto no encontrado.')
-        navigate('/catalogo')
+        setSaveStatus({ type: 'error', message: 'Producto no encontrado' })
+        setTimeout(() => {
+          setSaveStatus(null)
+          navigate('/catalogo')
+        }, 1000)
       } finally {
         setLoading(false)
       }
@@ -57,22 +61,23 @@ export default function ProductDetail() {
           descripcion: editDesc,
           precio: parseFloat(editPrice) || 0,
           agotado,
-          destacado,
         })
         .eq('id', id)
 
       if (error) throw error
-      alert('¡Cambios guardados con éxito!')
+      setSaveStatus({ type: 'success', message: 'Cambios guardados' })
+      setTimeout(() => setSaveStatus(null), 1000)
     } catch (err) {
       console.error('Error updating product:', err)
-      alert('Hubo un error al guardar los cambios.')
+      setSaveStatus({ type: 'error', message: 'Error al guardar cambios' })
+      setTimeout(() => setSaveStatus(null), 1000)
     } finally {
       setSaving(false)
     }
   }
 
   async function handleAddImage(file) {
-    setUploadingImage(true)
+    setImageUploading(true)
     try {
       const fileExt = file.name.split('.').pop()
       const fileName = `${Date.now()}_img.${fileExt}`
@@ -99,11 +104,14 @@ export default function ProductDetail() {
       if (dbError) throw dbError
 
       setProduct((prev) => ({ ...prev, imagenes: nextImages }))
+      setImageUploadModal({ type: 'success', message: 'Imagen cargada correctamente' })
+      setTimeout(() => setImageUploadModal(null), 1000)
     } catch (err) {
       console.error('Error añadiendo imagen:', err)
-      alert('Hubo un error al subir la foto adicional.')
+      setImageUploadModal({ type: 'error', message: 'Error al cargar imagen' })
+      setTimeout(() => setImageUploadModal(null), 1000)
     } finally {
-      setUploadingImage(false)
+      setImageUploading(false)
     }
   }
 
@@ -132,10 +140,28 @@ export default function ProductDetail() {
           <div className="product-gallery">
             <div className="main-image">
               {product.imagenes && product.imagenes.length > 0 ? (
-                <img src={product.imagenes[mainIdx] || product.imagenes[0]} alt={product.nombre} />
+                <ImageWithLoader src={product.imagenes[mainIdx] || product.imagenes[0]} alt={product.nombre} />
               ) : (
                 <div className="placeholder-detail">🖼️ Sin Foto</div>
               )}
+              {product.imagenes && product.imagenes.length > 1 ? (
+                <>
+                  <button
+                    className="gallery-arrow left"
+                    onClick={() => setMainIdx((prev) => (prev - 1 + product.imagenes.length) % product.imagenes.length)}
+                    aria-label="Anterior"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    className="gallery-arrow right"
+                    onClick={() => setMainIdx((prev) => (prev + 1) % product.imagenes.length)}
+                    aria-label="Siguiente"
+                  >
+                    ›
+                  </button>
+                </>
+              ) : null}
               {agotado && (
                 <div className="detail-agotado-overlay">
                   <span className="detail-agotado-badge">Agotado</span>
@@ -151,7 +177,7 @@ export default function ProductDetail() {
                     className={`thumb-container ${mainIdx === i ? 'thumb-active' : ''}`}
                     onClick={() => setMainIdx(i)}
                   >
-                    <img src={imgUrl} alt={`Thumbnail ${i}`} />
+                    <ImageWithLoader src={imgUrl} alt={`Thumbnail ${i}`} />
                   </div>
                 ))}
               </div>
@@ -162,7 +188,7 @@ export default function ProductDetail() {
               <ProductGallery
                 images={product.imagenes}
                 isAdmin
-                uploadingImage={uploadingImage}
+                uploading={imageUploading}
                 onAddImage={handleAddImage}
                 onDeleteImage={handleDeleteImage}
                 hideMainImage
@@ -182,8 +208,6 @@ export default function ProductDetail() {
               setEditPrice={setEditPrice}
               agotado={agotado}
               setAgotado={setAgotado}
-              destacado={destacado}
-              setDestacado={setDestacado}
               subcategoria={product.subcategoria}
               saving={saving}
               onSave={handleUpdate}
@@ -213,6 +237,44 @@ export default function ProductDetail() {
               </button>
             </div>
           )}
+        </div>
+      ) : null}
+
+      {saveStatus ? (
+        <div className="status-modal-overlay">
+          <div className={`status-modal-card ${saveStatus.type}`}>
+            <div className="status-icon">
+              {saveStatus.type === 'success' ? (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 13l4 4L19 7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6l-12 12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </div>
+            <p>{saveStatus.message}</p>
+          </div>
+        </div>
+      ) : null}
+
+      {imageUploadModal ? (
+        <div className="status-modal-overlay">
+          <div className={`status-modal-card ${imageUploadModal.type}`}>
+            <div className="status-icon">
+              {imageUploadModal.type === 'success' ? (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 13l4 4L19 7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6l-12 12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </div>
+            <p>{imageUploadModal.message}</p>
+          </div>
         </div>
       ) : null}
     </div>

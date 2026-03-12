@@ -76,9 +76,9 @@
 }
 
 .hero-layer-left .hero-word {
-  color: var(--color-banner-text);
+  color: var(--banner-color-2);
 }
 
 .hero-layer-right .hero-word {
-  color: var(--color-banner-text);
+  color: var(--banner-color-1);
 }

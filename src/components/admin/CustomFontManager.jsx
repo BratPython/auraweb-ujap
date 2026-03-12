@@ -1,6 +1,6 @@
 import React, { useRef } from 'react'
 
-export default function CustomFontManager({ customFonts, uploadingFont, onUpload, onRemove }) {
+export default function CustomFontManager({ customFonts, uploadingFont, fontUploadStatus, onUpload, onRemove }) {
   const fileInputRef = useRef(null)
 
   function handleFileChange(e) {
@@ -24,6 +24,25 @@ export default function CustomFontManager({ customFonts, uploadingFont, onUpload
         style={{ display: 'none' }}
         onChange={handleFileChange}
       />
+
+      {fontUploadStatus ? (
+        <div className="status-modal-inline" style={{ padding: '12px 0 4px' }}>
+          <div className={`status-modal-card ${fontUploadStatus.type}`}>
+            <div className="status-icon">
+              {fontUploadStatus.type === 'success' ? (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 13l4 4L19 7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6l-12 12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </div>
+            <p>{fontUploadStatus.message}</p>
+          </div>
+        </div>
+      ) : null}
 
       {customFonts.length > 0 && (
         <div style={{ marginTop: 10 }}>

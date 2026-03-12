@@ -153,7 +153,7 @@ export default function AdminUsers() {
             required
           />
 
-          <label htmlFor="new-admin-password">Contrasena</label>
+          <label htmlFor="new-admin-password">Contraseña</label>
           <input
             id="new-admin-password"
             type="password"

@@ -6,6 +6,7 @@ import { registerFont } from '../utils/fonts'
 export function useCustomFonts() {
   const [customFonts, setCustomFonts] = useState([])
   const [uploadingFont, setUploadingFont] = useState(false)
+  const [fontUploadStatus, setFontUploadStatus] = useState(null)
 
   useEffect(() => {
     async function fetchFonts() {
@@ -23,6 +24,27 @@ export function useCustomFonts() {
 
     fetchFonts()
   }, [])
+
+  useEffect(() => {
+    if (!customFonts.length) return
+
+    function retryLoad() {
+      customFonts.forEach((font) => registerFont(font.name, font.font_url))
+    }
+
+    retryLoad()
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') retryLoad()
+    }
+
+    window.addEventListener('focus', retryLoad)
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      window.removeEventListener('focus', retryLoad)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [customFonts])
 
   const allFonts = useMemo(() => {
     return [
@@ -72,13 +94,20 @@ export function useCustomFonts() {
 
       registerFont(origName, rootPayload.font_url)
       setCustomFonts((prev) => [...prev, rootPayload])
+      setFontUploadStatus({ type: 'success', message: 'Fuente guardada correctamente' })
     } catch (err) {
       console.error('Error al subir fuente personalizada:', err)
-      alert("Hubo un error al guardar la fuente. Verifica bucket 'recursos_aura' y permisos.")
+      setFontUploadStatus({ type: 'error', message: 'Error al guardar la fuente' })
     } finally {
       setUploadingFont(false)
     }
   }
+
+  useEffect(() => {
+    if (!fontUploadStatus) return
+    const timer = setTimeout(() => setFontUploadStatus(null), 1000)
+    return () => clearTimeout(timer)
+  }, [fontUploadStatus])
 
   async function removeCustomFont(fontName) {
     try {
@@ -90,5 +119,5 @@ export function useCustomFonts() {
     }
   }
 
-  return { customFonts, allFonts, uploadingFont, handleFontUpload, removeCustomFont }
+  return { customFonts, allFonts, uploadingFont, fontUploadStatus, handleFontUpload, removeCustomFont }
 }

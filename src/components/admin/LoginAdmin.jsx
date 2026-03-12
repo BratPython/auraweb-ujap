@@ -13,7 +13,7 @@ export default function LoginAdmin() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const nextPath = location.state?.from?.startsWith('/admin') ? location.state.from : '/admin/catalogo'
+  const nextPath = location.state?.from?.startsWith('/admin') ? location.state.from : '/catalogo'
 
   useEffect(() => {
     let mounted = true

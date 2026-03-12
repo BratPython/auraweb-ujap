@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../supabaseClient'
 import { useAdminMode } from '../../hooks/useAdminMode'
+import ImageWithLoader from '../ui/ImageWithLoader'
 
 export default function DiscoverSection() {
   const [displayProducts, setDisplayProducts] = useState([]) // Products to show in grid
@@ -9,16 +10,32 @@ export default function DiscoverSection() {
   const [allProducts, setAllProducts] = useState([])
   const [showSlotsModal, setShowSlotsModal] = useState(false)
   const [showProductPicker, setShowProductPicker] = useState(false)
-  const [activeSlot, setActiveSlot] = useState(null)
   const [search, setSearch] = useState('')
   const [saving, setSaving] = useState(null)
+  const [offset, setOffset] = useState(0)
+  const [isAnimating, setIsAnimating] = useState(false)
+  const [animDir, setAnimDir] = useState('right')
+  const [itemsPerView, setItemsPerView] = useState(3)
+  const timerRef = useRef(null)
+  const animTimeoutRef = useRef(null)
   const navigate = useNavigate()
   const { adminMode } = useAdminMode()
 
-  // Fetch featured products (up to 3 marked as destacado, or 9 recent as fallback)
+  const maxDisplay = 9
+
+  function shuffle(items) {
+    const next = [...items]
+    for (let i = next.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[next[i], next[j]] = [next[j], next[i]]
+    }
+    return next
+  }
+
+  // Fetch featured products (3 selected by admin) and randomize the rest
   const fetchFeatured = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      const { data: featuredData, error: featuredError } = await supabase
         .from('productos')
         .select('id, nombre, imagenes, precio, destacado')
         .eq('is_active', true)
@@ -26,41 +43,63 @@ export default function DiscoverSection() {
         .order('created_at', { ascending: false })
         .limit(3)
 
-      if (error) throw error
+      if (featuredError) throw featuredError
 
       // Store actual featured products for the modal
-      setFeaturedProducts(data || [])
+      setFeaturedProducts(featuredData || [])
+
+      const { data: allData, error: allError } = await supabase
+        .from('productos')
+        .select('id, nombre, imagenes, precio, created_at')
+        .eq('is_active', true)
+
+      if (allError) throw allError
+
+      const allItems = allData || []
+      if (allItems.length === 0) {
+        setDisplayProducts([])
+        setOffset(0)
+        return
+      }
 
       // If no featured, fall back to 9 most recent products for display
-      if (!data || data.length === 0) {
-        const { data: fallback } = await supabase
-          .from('productos')
-          .select('id, nombre, imagenes, precio')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false })
-          .limit(9)
-        setDisplayProducts(fallback || [])
-      } else {
-        setDisplayProducts(data)
+      if (!featuredData || featuredData.length === 0) {
+        const recent = [...allItems]
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+          .slice(0, maxDisplay)
+        setDisplayProducts(recent)
+        setOffset(0)
+        return
       }
+
+      const featuredIds = new Set(featuredData.map((p) => p.id))
+      const others = allItems.filter((p) => !featuredIds.has(p.id))
+      const randomized = shuffle(others)
+      const nextDisplay = [...featuredData, ...randomized].slice(0, maxDisplay)
+      setDisplayProducts(nextDisplay)
+      setOffset(0)
     } catch {
-      // On error, try to get recent products as fallback
       setFeaturedProducts([])
-      try {
-        const { data: fallback } = await supabase
-          .from('productos')
-          .select('id, nombre, imagenes, precio')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false })
-          .limit(9)
-        setDisplayProducts(fallback || [])
-      } catch {
-        setDisplayProducts([])
-      }
+      setDisplayProducts([])
+      setOffset(0)
     }
   }, [])
 
   useEffect(() => { fetchFeatured() }, [fetchFeatured])
+
+  useEffect(() => {
+    function handleResize() {
+      const next = window.innerWidth <= 720 ? 2 : 3
+      setItemsPerView(next)
+    }
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  useEffect(() => {
+    setOffset(0)
+  }, [itemsPerView])
 
   // Fetch all products for picker (when modal opens)
   useEffect(() => {
@@ -113,7 +152,6 @@ export default function DiscoverSection() {
 
       await fetchFeatured()
       setShowProductPicker(false)
-      setActiveSlot(null)
       setSearch('')
     } catch (err) {
       console.error('Error adding to slot:', err)
@@ -122,10 +160,53 @@ export default function DiscoverSection() {
     }
   }
 
-  function openProductPicker(slotIndex) {
-    setActiveSlot(slotIndex)
+  function openProductPicker() {
     setShowProductPicker(true)
     setSearch('')
+  }
+
+  const maxOffset = Math.max(0, displayProducts.length - itemsPerView)
+  const visible = displayProducts.slice(offset, offset + itemsPerView)
+
+  const advance = useCallback(() => {
+    setAnimDir('right')
+    setIsAnimating(false)
+    requestAnimationFrame(() => setIsAnimating(true))
+    if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current)
+    animTimeoutRef.current = setTimeout(() => setIsAnimating(false), 450)
+    setOffset((prev) => (prev + itemsPerView > maxOffset ? 0 : prev + itemsPerView))
+  }, [maxOffset, itemsPerView])
+
+  useEffect(() => {
+    if (displayProducts.length <= itemsPerView) return
+    timerRef.current = setInterval(advance, 5000)
+    return () => clearInterval(timerRef.current)
+  }, [displayProducts.length, itemsPerView, advance])
+
+  useEffect(() => {
+    return () => {
+      if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current)
+    }
+  }, [])
+
+  function goLeft() {
+    clearInterval(timerRef.current)
+    setAnimDir('left')
+    setIsAnimating(false)
+    requestAnimationFrame(() => setIsAnimating(true))
+    if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current)
+    animTimeoutRef.current = setTimeout(() => setIsAnimating(false), 450)
+    setOffset((prev) => (prev - itemsPerView < 0 ? maxOffset : prev - itemsPerView))
+  }
+
+  function goRight() {
+    clearInterval(timerRef.current)
+    setAnimDir('right')
+    setIsAnimating(false)
+    requestAnimationFrame(() => setIsAnimating(true))
+    if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current)
+    animTimeoutRef.current = setTimeout(() => setIsAnimating(false), 450)
+    setOffset((prev) => (prev + itemsPerView > maxOffset ? 0 : prev + itemsPerView))
   }
 
   return (
@@ -160,7 +241,7 @@ export default function DiscoverSection() {
                     <>
                       <div className="slot-image">
                         {product.imagenes?.[0] ? (
-                          <img src={product.imagenes[0]} alt={product.nombre} />
+                          <ImageWithLoader src={product.imagenes[0]} alt={product.nombre} />
                         ) : (
                           <span className="slot-placeholder">👜</span>
                         )}
@@ -181,7 +262,7 @@ export default function DiscoverSection() {
                   ) : (
                     <button 
                       className="slot-add"
-                      onClick={() => openProductPicker(i)}
+                      onClick={() => openProductPicker()}
                       disabled={featuredProducts.length >= 3}
                     >
                       <span className="slot-add-icon">+</span>
@@ -197,11 +278,11 @@ export default function DiscoverSection() {
 
       {/* Product Picker Modal */}
       {showProductPicker && (
-        <div className="modal-overlay" onClick={() => { setShowProductPicker(false); setActiveSlot(null) }}>
+        <div className="modal-overlay" onClick={() => { setShowProductPicker(false) }}>
           <div className="product-picker-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Seleccionar Producto</h3>
-              <button className="modal-close" onClick={() => { setShowProductPicker(false); setActiveSlot(null) }}>✕</button>
+              <button className="modal-close" onClick={() => { setShowProductPicker(false) }}>✕</button>
             </div>
             
             <div className="picker-search">
@@ -226,7 +307,7 @@ export default function DiscoverSection() {
                   >
                     <div className="picker-card-image">
                       {p.imagenes?.[0] ? (
-                        <img src={p.imagenes[0]} alt={p.nombre} />
+                        <ImageWithLoader src={p.imagenes[0]} alt={p.nombre} />
                       ) : (
                         <span className="picker-placeholder">👜</span>
                       )}
@@ -249,26 +330,40 @@ export default function DiscoverSection() {
 
       {/* Product Cards Display */}
       {displayProducts.length > 0 && (
-        <div className="discover-grid">
-          {displayProducts.map((p) => (
-            <div
-              key={p.id}
-              className="discover-card"
-              onClick={() => navigate(`/producto/${p.id}`)}
-            >
-              <div className="discover-card-image">
-                {p.imagenes && p.imagenes.length > 0 ? (
-                  <img src={p.imagenes[0]} alt={p.nombre} loading="lazy" />
-                ) : (
-                  <div className="discover-card-placeholder">👜</div>
-                )}
+        <div className="discover-carousel-wrapper">
+          {displayProducts.length > itemsPerView && (
+            <button className="discover-arrow left" onClick={goLeft} aria-label="Anterior">
+              ‹
+            </button>
+          )}
+
+          <div className={`discover-carousel ${isAnimating ? `is-animating ${animDir}` : ''}`}>
+            {visible.map((p) => (
+              <div
+                key={p.id}
+                className="discover-card"
+                onClick={() => navigate(`/producto/${p.id}`)}
+              >
+                <div className="discover-card-image">
+                  {p.imagenes && p.imagenes.length > 0 ? (
+                    <ImageWithLoader src={p.imagenes[0]} alt={p.nombre} loading="lazy" />
+                  ) : (
+                    <div className="discover-card-placeholder">👜</div>
+                  )}
+                </div>
+                <div className="discover-card-info">
+                  <span className="discover-card-name">{p.nombre}</span>
+                  <span className="discover-card-price">${p.precio}</span>
+                </div>
               </div>
-              <div className="discover-card-info">
-                <span className="discover-card-name">{p.nombre}</span>
-                <span className="discover-card-price">${p.precio}</span>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
+
+          {displayProducts.length > itemsPerView && (
+            <button className="discover-arrow right" onClick={goRight} aria-label="Siguiente">
+              ›
+            </button>
+          )}
         </div>
       )}
     </section>

@@ -6,7 +6,6 @@ export default function ProductEditor({
   editDesc, setEditDesc,
   editPrice, setEditPrice,
   agotado, setAgotado,
-  destacado, setDestacado,
   subcategoria,
   saving,
   onSave,
@@ -41,8 +40,9 @@ export default function ProductEditor({
       <div className="form-group">
         <label>Descripción</label>
         <textarea
-          className="detail-input"
-          rows={4}
+          className="detail-input detail-textarea"
+          rows={3}
+          maxLength={75}
           value={editDesc}
           onChange={(e) => setEditDesc(e.target.value)}
           readOnly={!isAdmin}
@@ -52,22 +52,20 @@ export default function ProductEditor({
       {isAdmin ? (
         <>
           <div className="toggle-group">
-            <label className="toggle-label">
-              <input
-                type="checkbox"
-                checked={!!agotado}
-                onChange={(e) => setAgotado(e.target.checked)}
-              />
-              <span>Marcar como Agotado</span>
-            </label>
-            <label className="toggle-label">
-              <input
-                type="checkbox"
-                checked={!!destacado}
-                onChange={(e) => setDestacado(e.target.checked)}
-              />
-              <span>Producto Destacado (Landing)</span>
-            </label>
+            <div className="toggle-item">
+              <span className="toggle-label-text">Estado del stock</span>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={!!agotado}
+                  onChange={(e) => setAgotado(e.target.checked)}
+                />
+                <span className="toggle-slider"></span>
+              </label>
+              <span className={`toggle-state ${agotado ? 'is-off' : 'is-on'}`}>
+                {agotado ? 'Agotado' : 'Disponible'}
+              </span>
+            </div>
           </div>
 
           <button

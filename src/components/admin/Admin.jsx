@@ -20,7 +20,7 @@ export default function Admin({ themeSettings, setThemeSettings }) {
   const [paletteClipboard, setPaletteClipboard] = useState(null)
   const [clipboardNote, setClipboardNote] = useState('')
 
-  const { customFonts, allFonts, uploadingFont, handleFontUpload, removeCustomFont } = useCustomFonts()
+  const { customFonts, allFonts, uploadingFont, fontUploadStatus, handleFontUpload, removeCustomFont } = useCustomFonts()
 
   // Auto-select first palette on load
   useEffect(() => {
@@ -360,6 +360,7 @@ export default function Admin({ themeSettings, setThemeSettings }) {
             <CustomFontManager
               customFonts={customFonts}
               uploadingFont={uploadingFont}
+              fontUploadStatus={fontUploadStatus}
               onUpload={handleFontUpload}
               onRemove={removeCustomFont}
             />

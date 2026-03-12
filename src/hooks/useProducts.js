@@ -13,10 +13,9 @@ export function useProducts(activeTab) {
 
       if (tab === 'Todos') {
         // no extra filter — fetch all
-      } else if (tab === 'Accesorios') {
-        query = query.eq('categoria', 'Accesorios')
       } else {
-        query = query.eq('categoria', 'Bags').eq('subcategoria', tab)
+        // Every tab (except "Todos") maps directly to a subcategory.
+        query = query.eq('subcategoria', tab)
       }
 
       const { data, error } = await query

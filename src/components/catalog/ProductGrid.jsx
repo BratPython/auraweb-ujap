@@ -1,5 +1,6 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
+import ImageWithLoader from '../ui/ImageWithLoader'
 
 export default function ProductGrid({ products, onDelete, canDelete = false, productPathBase = '/producto' }) {
   const navigate = useNavigate()
@@ -27,7 +28,7 @@ export default function ProductGrid({ products, onDelete, canDelete = false, pro
           ) : null}
           <div className="product-image-frame">
             {p.imagenes && p.imagenes.length > 0 ? (
-              <img src={p.imagenes[0]} alt={p.nombre} />
+              <ImageWithLoader src={p.imagenes[0]} alt={p.nombre} />
             ) : (
               <div className="product-placeholder">👜</div>
             )}

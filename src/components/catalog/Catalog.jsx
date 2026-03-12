@@ -19,7 +19,6 @@ export default function Catalog() {
   const { adminMode } = useAdminMode()
   const [activeTab, setActiveTab] = useState('Todos')
   const [showModal, setShowModal] = useState(false)
-  const [alertMsg, setAlertMsg] = useState('')
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState('default')
 
@@ -50,19 +49,18 @@ export default function Catalog() {
         break
     }
 
-    return items
+    const available = items.filter((p) => !p.agotado)
+    const agotados = items.filter((p) => p.agotado)
+
+    return [...available, ...agotados]
   }, [products, search, sort])
 
   async function handleCreateProduct(formData) {
-    const { category } = await createProduct(formData)
-
-    setAlertMsg('¡Producto creado exitosamente!')
-    setTimeout(() => setAlertMsg(''), 3000)
+    await createProduct(formData)
 
     if (
       activeTab === 'Todos' ||
-      activeTab === formData.subcategoria ||
-      (activeTab === 'Accesorios' && category === 'Accesorios')
+      activeTab === formData.subcategoria
     ) {
       fetchProducts(activeTab)
     }
@@ -107,8 +105,6 @@ export default function Catalog() {
       </div>
 
       <div className="catalog-container">
-        {alertMsg && <div className="catalog-alert success">{alertMsg}</div>}
-
         {loading ? (
           <div className="catalog-grid">
             <SkeletonCard count={6} />

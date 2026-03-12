@@ -1185,8 +1185,9 @@ body {
   gap: 10px;
   justify-content: center;
   flex-wrap: wrap;
-  margin-bottom: 40px;
+  margin: 40px;
   padding: 0 20px;
+  
 }
 
 .catalog-tab-btn {

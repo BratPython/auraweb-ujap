@@ -1,6 +1,7 @@
 import React, { useRef } from 'react'
+import ImageWithLoader from '../ui/ImageWithLoader'
 
-export default function ProductGallery({ images, isAdmin = false, uploadingImage, onAddImage, onDeleteImage, hideMainImage = false }) {
+export default function ProductGallery({ images, isAdmin = false, uploading = false, onAddImage, onDeleteImage, hideMainImage = false }) {
   const fileInputRef = useRef(null)
 
   return (
@@ -8,7 +9,7 @@ export default function ProductGallery({ images, isAdmin = false, uploadingImage
       {!hideMainImage && (
         <div className="main-image">
           {images && images.length > 0 ? (
-            <img src={images[0]} alt="Producto principal" />
+            <ImageWithLoader src={images[0]} alt="Producto principal" />
           ) : (
             <div className="placeholder-detail">🖼️ Sin Foto</div>
           )}
@@ -18,7 +19,7 @@ export default function ProductGallery({ images, isAdmin = false, uploadingImage
       <div className="thumbnail-strip">
         {images?.map((imgUrl, i) => (
           <div key={i} className="thumb-container">
-            <img src={imgUrl} alt={`Thumbnail ${i}`} />
+            <ImageWithLoader src={imgUrl} alt={`Thumbnail ${i}`} />
             {isAdmin && i > 0 && (
               <button className="del-thumb-btn" onClick={() => onDeleteImage(i)}>✕</button>
             )}
@@ -27,8 +28,11 @@ export default function ProductGallery({ images, isAdmin = false, uploadingImage
 
         {isAdmin ? (
           <>
-            <div className="add-thumb-btn" onClick={() => fileInputRef.current?.click()}>
-              {uploadingImage ? '⏳' : '+'}
+            <div
+              className={`add-thumb-btn ${uploading ? 'disabled' : ''}`}
+              onClick={() => !uploading && fileInputRef.current?.click()}
+            >
+              +
             </div>
 
             <input

@@ -63,7 +63,11 @@ function normalizeCategoryList(list, category) {
   const normalized = list.filter(Boolean).map((p, idx) => ({
     id: p.id || `${category}-${idx + 1}`,
     name: p.name || `${category}-${idx + 1}`,
-    values: { ...baseValues, ...(p.values || {}) },
+    values: {
+      ...baseValues,
+      ...(p.values || {}),
+      '--btn-bg': (p.values && p.values['--card']) || baseValues['--card'],
+    },
   }))
 
   if (normalized.length === 0) return [{ ...PALETTE_DEFAULTS[category] }]

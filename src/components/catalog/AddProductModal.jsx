@@ -3,11 +3,15 @@ import Modal from '../layout/Modal'
 import { SUB_CATEGORIAS_BOLSOS, SUB_CATEGORIAS_ACCESORIOS } from '../../config/constants'
 
 export default function AddProductModal({ activeTab, onClose, onSubmit }) {
+  const allSubcategories = [...SUB_CATEGORIAS_BOLSOS, ...SUB_CATEGORIAS_ACCESORIOS]
+  const initialSubcategory = allSubcategories.includes(activeTab) ? activeTab : SUB_CATEGORIAS_BOLSOS[0]
+
   const [formName, setFormName] = useState('')
   const [formDesc, setFormDesc] = useState('')
   const [formPrice, setFormPrice] = useState('')
-  const [formSubcategory, setFormSubcategory] = useState('Tote bags')
+  const [formSubcategory, setFormSubcategory] = useState(initialSubcategory)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [status, setStatus] = useState(null)
   const fileInputRef = useRef(null)
 
   async function handleSubmit(e) {
@@ -16,7 +20,8 @@ export default function AddProductModal({ activeTab, onClose, onSubmit }) {
 
     const file = fileInputRef.current?.files?.[0]
     if (!file) {
-      alert('Por favor selecciona una imagen para el producto.')
+      setStatus({ type: 'error', message: 'Selecciona una imagen para el producto' })
+      setTimeout(() => setStatus(null), 1000)
       return
     }
 
@@ -35,10 +40,18 @@ export default function AddProductModal({ activeTab, onClose, onSubmit }) {
       setFormDesc('')
       setFormPrice('')
       if (fileInputRef.current) fileInputRef.current.value = null
-      onClose()
+      setStatus({ type: 'success', message: 'Producto guardado' })
+      setTimeout(() => {
+        setStatus(null)
+        onClose()
+      }, 1000)
     } catch (err) {
       console.error('Error creating product:', err)
-      alert('Uh oh! Hubo un error subiendo el producto.')
+      setStatus({ type: 'error', message: 'Error al subir producto' })
+      setTimeout(() => {
+        setStatus(null)
+        onClose()
+      }, 1000)
     } finally {
       setIsSubmitting(false)
     }
@@ -46,7 +59,24 @@ export default function AddProductModal({ activeTab, onClose, onSubmit }) {
 
   return (
     <Modal onClose={onClose}>
-      {isSubmitting ? (
+      {status ? (
+        <div className="status-modal-inline">
+          <div className={`status-modal-card ${status.type}`}>
+            <div className="status-icon">
+              {status.type === 'success' ? (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 13l4 4L19 7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6l-12 12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </div>
+            <p>{status.message}</p>
+          </div>
+        </div>
+      ) : isSubmitting ? (
         <div className="uploading-state">
           <div className="spinner"></div>
           <h2>Guardando y subiendo imagen...</h2>
@@ -100,7 +130,13 @@ export default function AddProductModal({ activeTab, onClose, onSubmit }) {
 
           <div className="form-group">
             <label>Descripción</label>
-            <textarea rows="3" value={formDesc} onChange={(e) => setFormDesc(e.target.value)} />
+            <textarea
+              rows="3"
+              maxLength={75}
+              className="fixed-textarea"
+              value={formDesc}
+              onChange={(e) => setFormDesc(e.target.value)}
+            />
           </div>
 
           <div className="form-group">

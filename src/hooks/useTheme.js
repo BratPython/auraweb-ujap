@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../supabaseClient'
 import { FALLBACK_STATE } from '../config/theme'
 import { normalizeThemeSettings, buildVarsFromTypography, getActivePaletteByMode } from '../utils/theme'
+import { registerFont } from '../utils/fonts'
 
 export function useTheme() {
   const [themeSettings, setThemeSettings] = useState(null)
@@ -71,6 +72,48 @@ export function useTheme() {
 
     saveChanges()
   }, [themeSettings, globalDocId])
+
+  // Load custom fonts globally so they work outside admin pages too.
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadCustomFonts() {
+      try {
+        const { data, error } = await supabase
+          .from('custom_fonts')
+          .select('name, font_url')
+
+        if (error) {
+          console.error('Error cargando fuentes globales:', error)
+          return
+        }
+
+        if (cancelled) return
+
+        ;(data || []).forEach((font) => {
+          registerFont(font.name, font.font_url)
+        })
+      } catch (err) {
+        console.error('Excepcion cargando fuentes globales:', err)
+      }
+    }
+
+    loadCustomFonts()
+
+    const onFocus = () => loadCustomFonts()
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') loadCustomFonts()
+    }
+
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVisible)
+
+    return () => {
+      cancelled = true
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [])
 
   // Apply CSS variables to document root
   useEffect(() => {

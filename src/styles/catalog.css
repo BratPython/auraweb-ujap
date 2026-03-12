@@ -29,6 +29,7 @@
   justify-content: center;
   flex-wrap: wrap;
   margin-bottom: 40px;
+  margin-top: 20px;
   padding: 0 20px;
 }
 
@@ -133,6 +134,33 @@
   font-weight: 700;
   color: var(--accent);
   margin-left: 10px;
+}
+
+@media (max-width: 720px) {
+  .catalog-container {
+    padding: 0 20px;
+  }
+
+  .catalog-grid {
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+    gap: 16px;
+  }
+
+  .product-info-bar {
+    padding: 10px 12px;
+  }
+
+  .product-name {
+    font-size: 13px;
+  }
+
+  .product-price {
+    font-size: 12px;
+  }
+
+  .add-new-card {
+    min-height: 220px;
+  }
 }
 
 /* Add New Card */

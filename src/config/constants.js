@@ -18,9 +18,9 @@ export const MODE_OPTIONS = [
   { id: 'colorblind', label: 'Daltonico' },
 ]
 
-export const CATALOG_TABS = ['Todos', 'Tote bags', 'Carteras', 'Uni bags', 'Bandoleras', 'Accesorios']
-export const SUB_CATEGORIAS_BOLSOS = ['Tote bags', 'Carteras', 'Uni bags', 'Bandoleras']
-export const SUB_CATEGORIAS_ACCESORIOS = ['Cinturones', 'Lentes', 'Extras']
+export const CATALOG_TABS = ['Todos', 'Tote bags', 'Carteras', 'Uni bags', 'Pequeñas', 'Correas', 'Lentes', 'Extras']
+export const SUB_CATEGORIAS_BOLSOS = ['Tote bags', 'Carteras', 'Uni bags', 'Pequeñas']
+export const SUB_CATEGORIAS_ACCESORIOS = ['Correas', 'Lentes', 'Extras']
 
 export const PALETTE_CLIPBOARD_KEY = 'aura:paletteClipboard'
 
@@ -28,7 +28,7 @@ export const EDITABLE_COLORS = [
   { cssVar: '--primary-color', label: 'Primario', resolve: (v) => v['--banner-color-1'] || v['--accent-alt'] || '#c44b6a' },
   { cssVar: '--secondary-color', label: 'Secundario', resolve: (v) => v['--banner-color-2'] || v['--accent'] || '#d96b2d' },
   { cssVar: '--bg', label: 'Fondos', resolve: (v) => v['--bg'] || '#f6f0e6' },
-  { cssVar: '--card', label: 'Cards', resolve: (v) => v['--card'] || '#efe7d0' },
+  { cssVar: '--card', label: 'Botones y Cards', resolve: (v) => v['--card'] || '#efe7d0' },
   { cssVar: '--text-color', label: 'Textos', resolve: (v) => v['--color-body'] || '#2b2318' },
 ]
 
