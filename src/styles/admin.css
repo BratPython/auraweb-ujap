@@ -675,3 +675,373 @@
   background: #e04a4a;
   transform: scale(1.1);
 }
+
+/* ============================================================
+   Featured Slots Modal
+   ============================================================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+  animation: fadeIn .2s ease-out;
+}
+
+.featured-slots-modal {
+  width: min(520px, 100%);
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  max-height: 90vh;
+  overflow: hidden;
+  animation: slideUp .25s ease-out;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(128, 128, 128, .15);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-family: var(--font-title);
+  color: var(--color-title);
+  font-size: 18px;
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(128, 128, 128, .12);
+  color: var(--color-body);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .2s;
+}
+
+.modal-close:hover {
+  background: rgba(128, 128, 128, .25);
+}
+
+.modal-hint {
+  padding: 12px 20px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-body);
+  opacity: .7;
+  border-bottom: 1px solid rgba(128, 128, 128, .1);
+}
+
+.slots-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: 20px;
+}
+
+.slot-card {
+  position: relative;
+  background: var(--bg);
+  border-radius: var(--radius-md);
+  border: 2px dashed rgba(128, 128, 128, .2);
+  overflow: hidden;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.slot-card:has(.slot-image) {
+  border-style: solid;
+  border-color: var(--accent);
+}
+
+.slot-image {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(128, 128, 128, .05);
+}
+
+.slot-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.slot-placeholder {
+  font-size: 32px;
+  opacity: .15;
+}
+
+.slot-info {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: rgba(0, 0, 0, .03);
+}
+
+.slot-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-body);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slot-price {
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.slot-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, .6);
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .2s, transform .2s;
+  z-index: 5;
+}
+
+.slot-remove:hover {
+  background: #e04a4a;
+  transform: scale(1.1);
+}
+
+.slot-remove:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.slot-add {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: var(--color-body);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background .2s;
+}
+
+.slot-add:hover {
+  background: rgba(128, 128, 128, .08);
+}
+
+.slot-add-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(128, 128, 128, .12);
+  color: var(--color-body);
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .2s, transform .2s;
+}
+
+.slot-add:hover .slot-add-icon {
+  background: var(--accent);
+  color: #fff;
+  transform: scale(1.05);
+}
+
+.slot-add span:last-child {
+  font-size: 12px;
+  font-weight: 500;
+  opacity: .7;
+}
+
+/* ============================================================
+   Product Picker Modal
+   ============================================================ */
+.product-picker-modal {
+  width: min(700px, 100%);
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  max-height: 85vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp .25s ease-out;
+}
+
+.picker-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: rgba(128, 128, 128, .05);
+  border-bottom: 1px solid rgba(128, 128, 128, .1);
+}
+
+.picker-search .search-icon {
+  font-size: 16px;
+  opacity: .6;
+}
+
+.picker-search input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  color: var(--color-body);
+  outline: none;
+}
+
+.picker-search input::placeholder {
+  color: var(--color-body);
+  opacity: .5;
+}
+
+.picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.picker-card {
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  border: 2px solid transparent;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color .2s, transform .2s, box-shadow .2s;
+}
+
+.picker-card:not(.disabled):hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.picker-card.disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.picker-card-image {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: rgba(128, 128, 128, .05);
+}
+
+.picker-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .2s;
+}
+
+.picker-card:not(.disabled):hover .picker-card-image img {
+  transform: scale(1.05);
+}
+
+.picker-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  opacity: .15;
+}
+
+.picker-badge {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  padding: 4px 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.picker-card-info {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.picker-card-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-body);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.picker-card-price {
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.picker-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--color-body);
+  opacity: .6;
+  font-size: 14px;
+}
+
+/* Modal animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

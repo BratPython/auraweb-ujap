@@ -1,18 +1,21 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../supabaseClient'
 import { useAdminMode } from '../../hooks/useAdminMode'
 
 export default function DiscoverSection() {
-  const [products, setProducts] = useState([])
+  const [displayProducts, setDisplayProducts] = useState([]) // Products to show in grid
+  const [featuredProducts, setFeaturedProducts] = useState([]) // Only destacado=true products (for modal)
   const [allProducts, setAllProducts] = useState([])
-  const [offset, setOffset] = useState(0)
-  const [showPicker, setShowPicker] = useState(false)
+  const [showSlotsModal, setShowSlotsModal] = useState(false)
+  const [showProductPicker, setShowProductPicker] = useState(false)
+  const [activeSlot, setActiveSlot] = useState(null)
+  const [search, setSearch] = useState('')
   const [saving, setSaving] = useState(null)
-  const timerRef = useRef(null)
   const navigate = useNavigate()
   const { adminMode } = useAdminMode()
 
+  // Fetch featured products (up to 3 marked as destacado, or 9 recent as fallback)
   const fetchFeatured = useCallback(async () => {
     try {
       const { data, error } = await supabase
@@ -20,35 +23,48 @@ export default function DiscoverSection() {
         .select('id, nombre, imagenes, precio, destacado')
         .eq('is_active', true)
         .eq('destacado', true)
-        .limit(12)
+        .order('created_at', { ascending: false })
+        .limit(3)
 
       if (error) throw error
 
-      if (data && data.length > 0) {
-        setProducts(data)
-      } else {
+      // Store actual featured products for the modal
+      setFeaturedProducts(data || [])
+
+      // If no featured, fall back to 9 most recent products for display
+      if (!data || data.length === 0) {
         const { data: fallback } = await supabase
           .from('productos')
           .select('id, nombre, imagenes, precio')
           .eq('is_active', true)
-          .limit(6)
-        setProducts(fallback || [])
+          .order('created_at', { ascending: false })
+          .limit(9)
+        setDisplayProducts(fallback || [])
+      } else {
+        setDisplayProducts(data)
       }
     } catch {
-      const { data: fallback } = await supabase
-        .from('productos')
-        .select('id, nombre, imagenes, precio')
-        .eq('is_active', true)
-        .limit(6)
-      setProducts(fallback || [])
+      // On error, try to get recent products as fallback
+      setFeaturedProducts([])
+      try {
+        const { data: fallback } = await supabase
+          .from('productos')
+          .select('id, nombre, imagenes, precio')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(9)
+        setDisplayProducts(fallback || [])
+      } catch {
+        setDisplayProducts([])
+      }
     }
   }, [])
 
   useEffect(() => { fetchFeatured() }, [fetchFeatured])
 
-  // Fetch all products for the admin picker
+  // Fetch all products for picker (when modal opens)
   useEffect(() => {
-    if (!adminMode) return
+    if (!showProductPicker) return
     async function fetchAll() {
       const { data } = await supabase
         .from('productos')
@@ -58,50 +74,59 @@ export default function DiscoverSection() {
       setAllProducts(data || [])
     }
     fetchAll()
-  }, [adminMode, products])
+  }, [showProductPicker])
 
-  const maxOffset = Math.max(0, products.length - 3)
+  // Filter products by search
+  const filteredProducts = allProducts.filter((p) =>
+    p.nombre?.toLowerCase().includes(search.toLowerCase().trim())
+  )
 
-  const advance = useCallback(() => {
-    setOffset((prev) => (prev >= maxOffset ? 0 : prev + 3))
-  }, [maxOffset])
+  // Build 3 fixed slots for the modal (featured products + empty slots)
+  const slots = [
+    featuredProducts[0] || null,
+    featuredProducts[1] || null,
+    featuredProducts[2] || null
+  ]
 
-  useEffect(() => {
-    if (products.length <= 3 || adminMode) return
-    timerRef.current = setInterval(advance, 7000)
-    return () => clearInterval(timerRef.current)
-  }, [products, advance, adminMode])
+  // Remove product from slot (clear destacado)
+  async function removeFromSlot(slotIndex) {
+    const product = slots[slotIndex]
+    if (!product) return
 
-  function goLeft() {
-    clearInterval(timerRef.current)
-    setOffset((prev) => (prev <= 0 ? maxOffset : prev - 3))
-  }
-
-  function goRight() {
-    clearInterval(timerRef.current)
-    advance()
-  }
-
-  async function toggleDestacado(productId, current) {
-    setSaving(productId)
+    setSaving(slotIndex)
     try {
-      await supabase.from('productos').update({ destacado: !current }).eq('id', productId)
+      await supabase.from('productos').update({ destacado: false }).eq('id', product.id)
       await fetchFeatured()
-      // Also refresh allProducts list
-      const { data } = await supabase
-        .from('productos')
-        .select('id, nombre, imagenes, precio, destacado')
-        .eq('is_active', true)
-        .order('nombre')
-      setAllProducts(data || [])
     } catch (err) {
-      console.error('Error toggling destacado:', err)
+      console.error('Error removing from slot:', err)
     } finally {
       setSaving(null)
     }
   }
 
-  const visible = products.slice(offset, offset + 3)
+  // Add product to slot
+  async function addToSlot(product) {
+    setSaving('adding')
+    try {
+      // Mark new product as destacado
+      await supabase.from('productos').update({ destacado: true }).eq('id', product.id)
+
+      await fetchFeatured()
+      setShowProductPicker(false)
+      setActiveSlot(null)
+      setSearch('')
+    } catch (err) {
+      console.error('Error adding to slot:', err)
+    } finally {
+      setSaving(null)
+    }
+  }
+
+  function openProductPicker(slotIndex) {
+    setActiveSlot(slotIndex)
+    setShowProductPicker(true)
+    setSearch('')
+  }
 
   return (
     <section className="discover" id="discover">
@@ -111,99 +136,140 @@ export default function DiscoverSection() {
 
       {adminMode && (
         <div className="admin-inline-bar">
-          <span>Productos destacados ({products.length})</span>
-          <button className="btn-sm" onClick={() => setShowPicker(!showPicker)}>
-            {showPicker ? 'Cerrar selector' : '＋ Gestionar productos'}
+          <span>Productos destacados ({featuredProducts.length}/3)</span>
+          <button className="btn-sm" onClick={() => setShowSlotsModal(true)}>
+            Editar destacados
           </button>
         </div>
       )}
 
-      {adminMode && showPicker && (
-        <div className="admin-picker-panel">
-          <p className="admin-picker-hint">Marca o desmarca productos para mostrarlos en el carrusel</p>
-          <div className="admin-picker-grid">
-            {allProducts.map((p) => (
-              <div key={p.id} className={`admin-picker-item ${p.destacado ? 'featured' : ''}`}>
-                <div className="admin-picker-thumb">
-                  {p.imagenes?.[0] ? (
-                    <img src={p.imagenes[0]} alt={p.nombre} />
+      {/* Featured Slots Modal */}
+      {showSlotsModal && (
+        <div className="modal-overlay" onClick={() => setShowSlotsModal(false)}>
+          <div className="featured-slots-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Productos Destacados</h3>
+              <button className="modal-close" onClick={() => setShowSlotsModal(false)}>✕</button>
+            </div>
+            <p className="modal-hint">Selecciona hasta 3 productos para mostrar en la página principal</p>
+            
+            <div className="slots-grid">
+              {slots.map((product, i) => (
+                <div key={i} className="slot-card">
+                  {product ? (
+                    <>
+                      <div className="slot-image">
+                        {product.imagenes?.[0] ? (
+                          <img src={product.imagenes[0]} alt={product.nombre} />
+                        ) : (
+                          <span className="slot-placeholder">👜</span>
+                        )}
+                      </div>
+                      <div className="slot-info">
+                        <span className="slot-name">{product.nombre}</span>
+                        <span className="slot-price">${product.precio}</span>
+                      </div>
+                      <button
+                        className="slot-remove"
+                        onClick={() => removeFromSlot(i)}
+                        disabled={saving === i}
+                        title="Quitar producto"
+                      >
+                        {saving === i ? '...' : '✕'}
+                      </button>
+                    </>
                   ) : (
-                    <span>👜</span>
+                    <button 
+                      className="slot-add"
+                      onClick={() => openProductPicker(i)}
+                      disabled={featuredProducts.length >= 3}
+                    >
+                      <span className="slot-add-icon">+</span>
+                      <span>Agregar producto</span>
+                    </button>
                   )}
                 </div>
-                <span className="admin-picker-name">{p.nombre}</span>
-                <button
-                  className={`btn-sm ${p.destacado ? 'btn-sm-active' : ''}`}
-                  disabled={saving === p.id}
-                  onClick={() => toggleDestacado(p.id, p.destacado)}
-                >
-                  {saving === p.id ? '...' : p.destacado ? '★' : '☆'}
-                </button>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       )}
 
-      {products.length > 0 && (
-        <>
-          <div className="carousel-wrapper">
-            {products.length > 3 && (
-              <button className="carousel-arrow carousel-arrow-left" onClick={goLeft} aria-label="Anterior">
-                ‹
-              </button>
-            )}
-
-            <div className="carousel">
-              {visible.map((p) => (
-                <figure
-                  key={p.id}
-                  className="product-card"
-                  onClick={() => !adminMode && navigate(`/producto/${p.id}`)}
-                  style={{ cursor: adminMode ? 'default' : 'pointer' }}
-                >
-                  {p.imagenes && p.imagenes.length > 0 ? (
-                    <img src={p.imagenes[0]} alt={p.nombre} loading="lazy" />
-                  ) : (
-                    <div className="card-placeholder">👜</div>
-                  )}
-                  <figcaption className="card-title">{p.nombre}</figcaption>
-                  {adminMode && (
-                    <button
-                      className="admin-card-remove"
-                      title="Quitar de destacados"
-                      onClick={(e) => { e.stopPropagation(); toggleDestacado(p.id, true) }}
-                      disabled={saving === p.id}
-                    >
-                      ✕
-                    </button>
-                  )}
-                </figure>
-              ))}
+      {/* Product Picker Modal */}
+      {showProductPicker && (
+        <div className="modal-overlay" onClick={() => { setShowProductPicker(false); setActiveSlot(null) }}>
+          <div className="product-picker-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Seleccionar Producto</h3>
+              <button className="modal-close" onClick={() => { setShowProductPicker(false); setActiveSlot(null) }}>✕</button>
+            </div>
+            
+            <div className="picker-search">
+              <span className="search-icon">🔍</span>
+              <input
+                type="text"
+                placeholder="Buscar productos..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                autoFocus
+              />
             </div>
 
-            {products.length > 3 && (
-              <button className="carousel-arrow carousel-arrow-right" onClick={goRight} aria-label="Siguiente">
-                ›
-              </button>
-            )}
+            <div className="picker-grid">
+              {filteredProducts.map((p) => {
+                const isAlreadyFeatured = featuredProducts.some((f) => f?.id === p.id)
+                return (
+                  <div
+                    key={p.id}
+                    className={`picker-card ${isAlreadyFeatured ? 'disabled' : ''}`}
+                    onClick={() => !isAlreadyFeatured && addToSlot(p)}
+                  >
+                    <div className="picker-card-image">
+                      {p.imagenes?.[0] ? (
+                        <img src={p.imagenes[0]} alt={p.nombre} />
+                      ) : (
+                        <span className="picker-placeholder">👜</span>
+                      )}
+                      {isAlreadyFeatured && <span className="picker-badge">Ya destacado</span>}
+                    </div>
+                    <div className="picker-card-info">
+                      <span className="picker-card-name">{p.nombre}</span>
+                      <span className="picker-card-price">${p.precio}</span>
+                    </div>
+                  </div>
+                )
+              })}
+              {filteredProducts.length === 0 && (
+                <p className="picker-empty">No se encontraron productos</p>
+              )}
+            </div>
           </div>
+        </div>
+      )}
 
-          {products.length > 3 && (
-            <div className="carousel-dots">
-              {Array.from({ length: Math.ceil(products.length / 3) }).map((_, i) => (
-                <span
-                  key={i}
-                  className={`carousel-dot ${Math.floor(offset / 3) === i ? 'active' : ''}`}
-                  onClick={() => {
-                    clearInterval(timerRef.current)
-                    setOffset(i * 3)
-                  }}
-                />
-              ))}
+      {/* Product Cards Display */}
+      {displayProducts.length > 0 && (
+        <div className="discover-grid">
+          {displayProducts.map((p) => (
+            <div
+              key={p.id}
+              className="discover-card"
+              onClick={() => navigate(`/producto/${p.id}`)}
+            >
+              <div className="discover-card-image">
+                {p.imagenes && p.imagenes.length > 0 ? (
+                  <img src={p.imagenes[0]} alt={p.nombre} loading="lazy" />
+                ) : (
+                  <div className="discover-card-placeholder">👜</div>
+                )}
+              </div>
+              <div className="discover-card-info">
+                <span className="discover-card-name">{p.nombre}</span>
+                <span className="discover-card-price">${p.precio}</span>
+              </div>
             </div>
-          )}
-        </>
+          ))}
+        </div>
       )}
     </section>
   )
