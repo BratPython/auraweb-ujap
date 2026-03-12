@@ -9,6 +9,7 @@ import PaletteManager from './PaletteManager'
 import PaletteEditor from './PaletteEditor'
 import TypographyEditor from './TypographyEditor'
 import CustomFontManager from './CustomFontManager'
+import Header from '../layout/Header'
 
 export default function Admin({ themeSettings, setThemeSettings }) {
   const [editingCategory, setEditingCategory] = useState('light')
@@ -170,6 +171,9 @@ export default function Admin({ themeSettings, setThemeSettings }) {
         '--color-brand': value,
         '--color-nav': value,
         '--color-card-title': value,
+        '--color-btn': value,
+        '--color-footer-title': value,
+        '--color-footer': value,
       },
       '--bg': { '--bg': value, '--header-bg': value },
       '--primary-color': { '--banner-color-1': value, '--accent-alt': value },
@@ -178,6 +182,10 @@ export default function Admin({ themeSettings, setThemeSettings }) {
         '--accent': value,
         '--btn-hover': value,
         '--footer-bg': value,
+      },
+      '--card': {
+        '--card': value,
+        '--btn-bg': value,
       },
     }
 
@@ -305,6 +313,7 @@ export default function Admin({ themeSettings, setThemeSettings }) {
 
   return (
     <div className="admin-page admin-v2-page">
+      <Header currentPage="admin-temas" />
       <div className="admin-v2-layout">
         <div className="admin-v2-sidebar">
           <div className="editor-card">

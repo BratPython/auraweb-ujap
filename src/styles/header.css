@@ -2,6 +2,111 @@
    Header & Navigation
    ============================================================ */
 
+.admin-quickbar {
+  position: sticky;
+  top: 0;
+  z-index: 130;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 20px;
+  background: var(--color-body);
+  color: var(--bg);
+  border-bottom: 1px solid rgba(255, 255, 255, .18);
+}
+
+.admin-quickbar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.admin-quickbar-left strong {
+  font-size: 12px;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+}
+
+/* Toggle Switch */
+.admin-toggle-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.admin-toggle-switch input {
+  display: none;
+}
+
+.admin-toggle-slider {
+  position: relative;
+  width: 38px;
+  height: 20px;
+  background: rgba(255, 255, 255, .2);
+  border-radius: 20px;
+  transition: background .25s;
+}
+
+.admin-toggle-slider::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform .25s;
+}
+
+.admin-toggle-switch input:checked + .admin-toggle-slider {
+  background: #4caf50;
+}
+
+.admin-toggle-switch input:checked + .admin-toggle-slider::after {
+  transform: translateX(18px);
+}
+
+.admin-toggle-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .3px;
+  opacity: .85;
+}
+
+.admin-quickbar-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.admin-quickbar-actions button {
+  border: 1px solid rgba(255, 255, 255, .25);
+  background: transparent;
+  color: inherit;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-quickbar-actions button:hover {
+  background: rgba(255, 255, 255, .12);
+}
+
+.admin-quickbar-actions button.danger {
+  border-color: rgba(255, 120, 120, .7);
+}
+
+.admin-quickbar-actions button.danger:hover {
+  background: rgba(255, 120, 120, .18);
+}
+
 .site-header {
   position: sticky;
   top: 0;
@@ -158,4 +263,16 @@
   inset: 0;
   background: rgba(0, 0, 0, 0.3);
   z-index: 99;
+}
+
+@media (max-width: 768px) {
+  .admin-quickbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-quickbar-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
 }

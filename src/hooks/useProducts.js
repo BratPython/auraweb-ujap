@@ -11,7 +11,9 @@ export function useProducts(activeTab) {
     try {
       let query = supabase.from('productos').select('*').eq('is_active', true)
 
-      if (tab === 'Accesorios') {
+      if (tab === 'Todos') {
+        // no extra filter — fetch all
+      } else if (tab === 'Accesorios') {
         query = query.eq('categoria', 'Accesorios')
       } else {
         query = query.eq('categoria', 'Bags').eq('subcategoria', tab)

@@ -16,6 +16,10 @@
     overflow: visible;
     padding-right: 0;
   }
+
+  .admin-users-page {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 768px) {
@@ -92,6 +96,15 @@
     gap: 32px;
     text-align: center;
   }
+
+  .admin-shell-header {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+  }
+
+  .admin-shell-nav {
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 900px) {
@@ -103,5 +116,29 @@
 
   .catalog-container {
     padding: 0 20px;
+  }
+
+  .skeleton-detail {
+    grid-template-columns: 1fr;
+    padding: 20px;
+  }
+
+  .carousel-arrow-left {
+    left: 2px;
+  }
+
+  .carousel-arrow-right {
+    right: 2px;
+  }
+}
+
+@media (max-width: 480px) {
+  .catalog-toolbar {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .catalog-sort {
+    width: 100%;
   }
 }

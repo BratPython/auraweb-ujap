@@ -18,7 +18,7 @@ export const MODE_OPTIONS = [
   { id: 'colorblind', label: 'Daltonico' },
 ]
 
-export const CATALOG_TABS = ['Tote bags', 'Carteras', 'Uni bags', 'Bandoleras', 'Accesorios']
+export const CATALOG_TABS = ['Todos', 'Tote bags', 'Carteras', 'Uni bags', 'Bandoleras', 'Accesorios']
 export const SUB_CATEGORIAS_BOLSOS = ['Tote bags', 'Carteras', 'Uni bags', 'Bandoleras']
 export const SUB_CATEGORIAS_ACCESORIOS = ['Cinturones', 'Lentes', 'Extras']
 

@@ -29,7 +29,7 @@ export default function TypographyEditor({ typography, allFonts, onUpdate }) {
             </div>
 
             <div className="control-line control-line-input">
-              <span>Tamano</span>
+              <span>Tamaño</span>
               <input
                 type="number"
                 min={minSize}

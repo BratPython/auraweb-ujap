@@ -1,85 +1,84 @@
 import React from 'react'
 
 export default function ProductEditor({
+  isAdmin = false,
   editName, setEditName,
   editDesc, setEditDesc,
   editPrice, setEditPrice,
-  editBg, setEditBg,
-  editColor, setEditColor,
+  agotado, setAgotado,
+  destacado, setDestacado,
   subcategoria,
   saving,
   onSave,
 }) {
   return (
-    <div className="product-editor-panel" style={{ backgroundColor: `${editBg}fa` }}>
+    <div className="product-editor-panel">
       <h2 style={{ marginTop: 0, opacity: 0.5, fontSize: 12, textTransform: 'uppercase' }}>
         Editando Producto: {subcategoria}
       </h2>
 
       <div className="form-group">
-        <label style={{ color: editColor }}>Nombre del producto</label>
+        <label>Nombre del producto</label>
         <input
           className="detail-input"
-          style={{ color: editColor, borderColor: `${editColor}33` }}
           value={editName}
           onChange={(e) => setEditName(e.target.value)}
+          readOnly={!isAdmin}
         />
       </div>
 
       <div className="form-group">
-        <label style={{ color: editColor }}>Precio ($)</label>
+        <label>Precio ($)</label>
         <input
           type="number"
           className="detail-input"
-          style={{ color: editColor, borderColor: `${editColor}33` }}
           value={editPrice}
           onChange={(e) => setEditPrice(e.target.value)}
+          readOnly={!isAdmin}
         />
       </div>
 
       <div className="form-group">
-        <label style={{ color: editColor }}>Descripción</label>
+        <label>Descripción</label>
         <textarea
           className="detail-input"
           rows={4}
-          style={{ color: editColor, borderColor: `${editColor}33` }}
           value={editDesc}
           onChange={(e) => setEditDesc(e.target.value)}
+          readOnly={!isAdmin}
         />
       </div>
 
-      <div className="theme-override-box" style={{ borderColor: `${editColor}33` }}>
-        <h4 style={{ marginTop: 0 }}>🎨 Tema de esta página</h4>
-        <div style={{ display: 'flex', gap: 10, marginBottom: 8 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-            Fondo:
-            <input
-              type="color"
-              value={editBg}
-              onChange={(e) => setEditBg(e.target.value)}
-              style={{ width: 24, height: 24, padding: 0, border: 'none', borderRadius: 4 }}
-            />
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-            Texto:
-            <input
-              type="color"
-              value={editColor}
-              onChange={(e) => setEditColor(e.target.value)}
-              style={{ width: 24, height: 24, padding: 0, border: 'none', borderRadius: 4 }}
-            />
-          </label>
-        </div>
-      </div>
+      {isAdmin ? (
+        <>
+          <div className="toggle-group">
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={!!agotado}
+                onChange={(e) => setAgotado(e.target.checked)}
+              />
+              <span>Marcar como Agotado</span>
+            </label>
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={!!destacado}
+                onChange={(e) => setDestacado(e.target.checked)}
+              />
+              <span>Producto Destacado (Landing)</span>
+            </label>
+          </div>
 
-      <button
-        className="btn btn-save-detail"
-        style={{ background: editColor, color: editBg }}
-        onClick={onSave}
-        disabled={saving}
-      >
-        {saving ? 'Guardando...' : 'Guardar Cambios Individuales'}
-      </button>
+          <button
+            className="btn btn-save-detail"
+            onClick={onSave}
+            disabled={saving}
+          >
+            {saving ? 'Guardando...' : 'Guardar cambios'}
+          </button>
+        </>
+      ) : null}
     </div>
   )
 }

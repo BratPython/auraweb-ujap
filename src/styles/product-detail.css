@@ -6,6 +6,8 @@
   padding-bottom: 60px;
   display: flex;
   flex-direction: column;
+  background: var(--bg);
+  color: var(--color-body);
 }
 
 .product-detail-container {
@@ -130,16 +132,19 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  background: var(--card);
+  color: var(--color-body);
 }
 
 .detail-input {
   width: 100%;
   padding: 12px;
-  border: 1px solid transparent;
+  border: 1px solid rgba(128, 128, 128, .15);
   border-radius: var(--radius-sm);
   font-family: var(--font-body);
   font-size: 16px;
   background: transparent;
+  color: var(--color-body);
   outline: none;
   transition: 0.2s;
 }
@@ -153,8 +158,9 @@ input.detail-input {
   font-weight: 600;
   font-family: var(--font-card-title);
   padding: 8px 0;
-  border-bottom: 2px solid;
+  border-bottom: 2px solid rgba(128, 128, 128, .2);
   border-radius: 0;
+  color: var(--color-body);
 }
 
 .theme-override-box {
@@ -174,6 +180,8 @@ input.detail-input {
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   margin-top: 10px;
+  background: var(--accent);
+  color: #fff;
 }
 
 .btn-save-detail:hover:not(:disabled) {
@@ -196,6 +204,151 @@ input.detail-input {
   opacity: 0.8;
   transition: opacity 0.2s;
   text-decoration: none;
+}
+
+/* Public product info panel */
+.product-info-panel {
+  padding: 10px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.product-detail-sub {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  opacity: .5;
+  font-family: var(--font-body);
+}
+
+.product-detail-name {
+  font-family: var(--font-title);
+  font-size: clamp(24px, 4vw, 36px);
+  font-weight: 600;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.product-detail-price {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 4px 0 0;
+  font-family: var(--font-body);
+  color: var(--accent);
+}
+
+.product-detail-desc {
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.7;
+  opacity: .8;
+  margin: 8px 0;
+}
+
+.product-detail-status.agotado {
+  font-size: 14px;
+  font-weight: 600;
+  color: #c0392b;
+  padding: 10px 16px;
+  background: rgba(192,57,43,.08);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.btn-whatsapp {
+  display: inline-block;
+  text-align: center;
+  padding: 14px 28px;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  text-decoration: none;
+  transition: transform .2s, box-shadow .2s;
+  box-shadow: var(--shadow-sm);
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-whatsapp:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.back-link {
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  opacity: .6;
+  transition: opacity .2s;
+  text-align: left;
+  font-family: var(--font-body);
+  margin-top: 12px;
+}
+
+.back-link:hover {
+  opacity: 1;
+}
+
+/* Agotado overlay on main image */
+.detail-agotado-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.main-image {
+  position: relative;
+}
+
+.detail-agotado-badge {
+  background: rgba(0,0,0,.6);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 12px 32px;
+  border-radius: 6px;
+  backdrop-filter: blur(3px);
+}
+
+/* Active thumbnail */
+.thumb-active {
+  border-color: var(--accent) !important;
+}
+
+/* Admin toggle group */
+.toggle-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px dashed;
+  border-radius: var(--radius-sm);
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.toggle-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent, #d96b2d);
+  cursor: pointer;
 }
 
 .back-btn:hover {

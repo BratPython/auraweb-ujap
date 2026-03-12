@@ -1,16 +1,57 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import Header from '../layout/Header'
 import ProductGrid from './ProductGrid'
 import AddProductModal from './AddProductModal'
+import { SkeletonCard } from '../ui/LoadingSpinner'
 import { useProducts } from '../../hooks/useProducts'
+import { useAdminMode } from '../../hooks/useAdminMode'
 import { CATALOG_TABS } from '../../config/constants'
 
+const SORT_OPTIONS = [
+  { value: 'default', label: 'Ordenar' },
+  { value: 'az', label: 'A → Z' },
+  { value: 'za', label: 'Z → A' },
+  { value: 'price-asc', label: 'Precio ↑' },
+  { value: 'price-desc', label: 'Precio ↓' },
+]
+
 export default function Catalog() {
-  const [activeTab, setActiveTab] = useState('Tote bags')
+  const { adminMode } = useAdminMode()
+  const [activeTab, setActiveTab] = useState('Todos')
   const [showModal, setShowModal] = useState(false)
   const [alertMsg, setAlertMsg] = useState('')
+  const [search, setSearch] = useState('')
+  const [sort, setSort] = useState('default')
 
   const { products, loading, fetchProducts, deleteProduct, createProduct } = useProducts(activeTab)
+
+  const filteredProducts = useMemo(() => {
+    let items = [...products]
+
+    if (search.trim()) {
+      const q = search.toLowerCase().trim()
+      items = items.filter((p) => p.nombre?.toLowerCase().includes(q))
+    }
+
+    switch (sort) {
+      case 'az':
+        items.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''))
+        break
+      case 'za':
+        items.sort((a, b) => (b.nombre || '').localeCompare(a.nombre || ''))
+        break
+      case 'price-asc':
+        items.sort((a, b) => (a.precio || 0) - (b.precio || 0))
+        break
+      case 'price-desc':
+        items.sort((a, b) => (b.precio || 0) - (a.precio || 0))
+        break
+      default:
+        break
+    }
+
+    return items
+  }, [products, search, sort])
 
   async function handleCreateProduct(formData) {
     const { category } = await createProduct(formData)
@@ -19,6 +60,7 @@ export default function Catalog() {
     setTimeout(() => setAlertMsg(''), 3000)
 
     if (
+      activeTab === 'Todos' ||
       activeTab === formData.subcategoria ||
       (activeTab === 'Accesorios' && category === 'Accesorios')
     ) {
@@ -42,24 +84,54 @@ export default function Catalog() {
         ))}
       </div>
 
+      <div className="catalog-toolbar">
+        <div className="catalog-search">
+          <span className="search-icon">🔍</span>
+          <input
+            type="text"
+            placeholder="Buscar productos..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="search-input"
+          />
+        </div>
+        <select
+          className="catalog-sort"
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+        >
+          {SORT_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      </div>
+
       <div className="catalog-container">
         {alertMsg && <div className="catalog-alert success">{alertMsg}</div>}
 
         {loading ? (
-          <div className="catalog-loading">Cargando productos...</div>
+          <div className="catalog-grid">
+            <SkeletonCard count={6} />
+          </div>
         ) : (
           <div className="catalog-grid">
-            <ProductGrid products={products} onDelete={deleteProduct} />
+            <ProductGrid
+              products={filteredProducts}
+              onDelete={deleteProduct}
+              canDelete={adminMode}
+            />
 
-            <div className="product-card-admin add-new-card" onClick={() => setShowModal(true)}>
-              <div className="add-icon">+</div>
-              <span>Añadir Nuevo</span>
-            </div>
+            {adminMode ? (
+              <div className="product-card-admin add-new-card" onClick={() => setShowModal(true)}>
+                <div className="add-icon">+</div>
+                <span>Añadir Nuevo</span>
+              </div>
+            ) : null}
           </div>
         )}
       </div>
 
-      {showModal && (
+      {adminMode && showModal && (
         <AddProductModal
           activeTab={activeTab}
           onClose={() => setShowModal(false)}

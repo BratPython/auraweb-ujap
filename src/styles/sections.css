@@ -40,6 +40,7 @@
   transition: var(--transition);
   box-shadow: var(--shadow-sm);
   animation: fadeUp .6s ease-out both;
+  position: relative;
 }
 
 .product-card:hover {
@@ -65,6 +66,82 @@
   font-size: var(--size-card-title);
   font-family: var(--font-card-title);
   font-weight: 500;
+}
+
+.card-placeholder {
+  width: 100%;
+  aspect-ratio: 4/5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 60px;
+  opacity: .15;
+  background: rgba(128,128,128,.05);
+  border-radius: var(--radius-md);
+}
+
+/* Carousel wrapper with arrows */
+.carousel-wrapper {
+  position: relative;
+  max-width: var(--container);
+  margin: 0 auto;
+}
+
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: var(--card, #efe7d0);
+  color: var(--color-body, #2b2318);
+  font-size: 26px;
+  font-weight: 300;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  line-height: 1;
+}
+
+.carousel-arrow:hover {
+  background: var(--accent);
+  color: #fff;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-arrow-left {
+  left: -10px;
+}
+
+.carousel-arrow-right {
+  right: -10px;
+}
+
+.carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.carousel-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(128,128,128,.2);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.carousel-dot.active {
+  background: var(--accent);
+  transform: scale(1.2);
 }
 
 /* Catalog CTA */

@@ -333,3 +333,345 @@
 .preview-frame-inner {
   min-height: 100%;
 }
+
+/* Secure admin shell */
+.admin-shell {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--color-body);
+}
+
+.admin-shell-header {
+  position: sticky;
+  top: 0;
+  z-index: 120;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  background: var(--header-bg);
+  border-bottom: 1px solid rgba(0, 0, 0, .08);
+}
+
+.admin-shell-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.admin-shell-badge {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: var(--color-title);
+  text-transform: uppercase;
+}
+
+.admin-shell-subtitle {
+  font-size: 12px;
+  opacity: .7;
+}
+
+.admin-shell-nav {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.admin-shell-link {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(0, 0, 0, .12);
+  color: var(--color-nav);
+  background: var(--btn-bg);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.admin-shell-link:hover,
+.admin-shell-link.active {
+  background: var(--btn-hover);
+  color: var(--color-btn-hover);
+  border-color: transparent;
+}
+
+.admin-shell-logout {
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  background: var(--btn-hover);
+  color: var(--color-btn-hover);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-shell-content {
+  padding: 16px;
+}
+
+/* Login admin */
+.admin-login-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: linear-gradient(140deg, var(--bg), var(--card));
+}
+
+.admin-login-card {
+  width: min(460px, 100%);
+  background: var(--card);
+  border: 1px solid rgba(0, 0, 0, .08);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 24px;
+}
+
+.admin-login-card h1 {
+  margin: 0 0 8px;
+  color: var(--color-title);
+}
+
+.admin-login-card p {
+  margin: 0 0 18px;
+  opacity: .8;
+}
+
+.admin-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-login-form label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.admin-login-form input {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, .15);
+  background: var(--bg);
+  color: var(--color-body);
+}
+
+.admin-login-form button {
+  margin-top: 6px;
+  border: none;
+  border-radius: 8px;
+  padding: 11px 14px;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--btn-hover);
+  color: var(--color-btn-hover);
+}
+
+.admin-login-error {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(200, 40, 40, .12);
+  border: 1px solid rgba(200, 40, 40, .3);
+  color: #8a1f1f;
+  font-size: 13px;
+}
+
+/* Users admin */
+.admin-users-page {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 16px;
+}
+
+.admin-users-card {
+  background: var(--card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+  border: 1px solid rgba(0, 0, 0, .07);
+}
+
+.admin-users-card h2,
+.admin-users-card h3 {
+  margin-top: 0;
+  color: var(--color-title);
+}
+
+.admin-users-feedback {
+  margin: 10px 0 12px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, .05);
+  font-size: 13px;
+}
+
+.admin-users-table-wrap {
+  overflow: auto;
+}
+
+.admin-users-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 560px;
+}
+
+.admin-users-table th,
+.admin-users-table td {
+  text-align: left;
+  padding: 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, .08);
+  font-size: 13px;
+}
+
+.admin-users-table td select {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, .16);
+  background: var(--bg);
+}
+
+.admin-users-id {
+  font-family: monospace;
+  opacity: .7;
+}
+
+.admin-users-create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-users-create-form input {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, .15);
+  background: var(--bg);
+  color: var(--color-body);
+}
+
+.admin-users-create-form button {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-weight: 700;
+  background: var(--btn-hover);
+  color: var(--color-btn-hover);
+  cursor: pointer;
+}
+
+/* Admin inline editing bar (DiscoverSection, etc.) */
+.admin-inline-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 20px;
+  margin: 10px auto 0;
+  max-width: var(--container);
+  background: var(--card);
+  border: 1px dashed var(--accent);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-body);
+}
+
+/* Admin product picker panel */
+.admin-picker-panel {
+  max-width: var(--container);
+  margin: 12px auto 0;
+  padding: 16px;
+  background: var(--card);
+  border: 1px solid rgba(128, 128, 128, .15);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-picker-hint {
+  font-size: 12px;
+  opacity: .7;
+  margin: 0 0 12px;
+}
+
+.admin-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.admin-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(128, 128, 128, .12);
+  background: var(--bg);
+  transition: border-color .2s, background .2s;
+}
+
+.admin-picker-item.featured {
+  border-color: var(--accent);
+  background: rgba(217, 107, 45, .06);
+}
+
+.admin-picker-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: rgba(128, 128, 128, .05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.admin-picker-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-picker-name {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-body);
+}
+
+/* Admin remove button on carousel cards */
+.admin-card-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, .55);
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .2s, transform .2s;
+  z-index: 5;
+}
+
+.admin-card-remove:hover {
+  background: #e04a4a;
+  transform: scale(1.1);
+}
