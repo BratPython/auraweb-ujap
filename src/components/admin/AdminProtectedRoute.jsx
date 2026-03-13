@@ -75,6 +75,5 @@ export default function AdminProtectedRoute() {
     return <Navigate to="/" replace />
   }
 
-  // Si todo está perfecto, mostramos las rutas de administrador
   return <Outlet />
 }
