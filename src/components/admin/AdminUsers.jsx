@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { supabase } from '../../supabaseClient'
 import Header from '../layout/Header'
+import ThemeSelector from '../ui/ThemeSelector'
 
-export default function AdminUsers() {
+export default function AdminUsers({ activeMode, onModeChange }) {
   const [profiles, setProfiles] = useState([])
   const [loading, setLoading] = useState(true)
   const [savingId, setSavingId] = useState('')
@@ -90,7 +91,9 @@ export default function AdminUsers() {
 
   return (
     <div className="admin-page">
-      <Header currentPage="admin-usuarios" />
+      <Header currentPage="admin-usuarios">
+        <ThemeSelector activeMode={activeMode} onModeChange={onModeChange} />
+      </Header>
       <section className="admin-users-page" style={{ padding: 20 }}>
       <div className="admin-users-card">
         <h2>Usuarios y roles</h2>

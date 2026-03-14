@@ -235,6 +235,17 @@
   font-size: 12px;
 }
 
+.saved-palette-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.saved-palette-list.is-paginated {
+  min-height: 316px;
+}
+
 .saved-palette-item {
   display: flex;
   align-items: center;
@@ -242,7 +253,6 @@
   padding: 10px 12px;
   background: rgba(128, 128, 128, .05);
   border-radius: 6px;
-  margin-bottom: 8px;
   transition: background .2s;
 }
 
@@ -281,6 +291,20 @@
 .saved-palette-actions {
   display: flex;
   gap: 6px;
+}
+
+.palette-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 4px 0 10px;
+}
+
+.palette-page-indicator {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: .85;
 }
 
 .admin-note {
@@ -808,7 +832,7 @@
 
 .slot-price {
   font-size: 11px;
-  color: var(--accent);
+  color: var(--color-body);
   font-weight: 600;
 }
 
@@ -1016,7 +1040,7 @@
 
 .picker-card-price {
   font-size: 11px;
-  color: var(--accent);
+  color: var(--color-body);
   font-weight: 600;
 }
 

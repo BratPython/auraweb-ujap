@@ -1,5 +1,7 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { CATEGORY_META } from '../../config/constants'
+
+const PALETTES_PER_PAGE = 6
 
 export default function PaletteManager({
   themeSettings,
@@ -19,12 +21,64 @@ export default function PaletteManager({
   onPasteLocal,
   onPasteSystem,
 }) {
+  const [pageByCategory, setPageByCategory] = useState({ light: 1, dark: 1, colorblind: 1 })
+
+  useEffect(() => {
+    setPageByCategory((prev) => {
+      let changed = false
+      const next = { ...prev }
+
+      Object.keys(CATEGORY_META).forEach((category) => {
+        const list = themeSettings.palettesByMode[category] || []
+        const query = (searchByCategory[category] || '').toLowerCase().trim()
+        const filtered = list.filter((p) => p.name.toLowerCase().includes(query))
+        const totalPages = Math.max(1, Math.ceil(filtered.length / PALETTES_PER_PAGE))
+        const currentPage = next[category] || 1
+
+        if (currentPage > totalPages) {
+          next[category] = totalPages
+          changed = true
+        }
+
+        if (currentPage < 1) {
+          next[category] = 1
+          changed = true
+        }
+      })
+
+      return changed ? next : prev
+    })
+  }, [searchByCategory, themeSettings.palettesByMode])
+
+  useEffect(() => {
+    if (!editingCategory || !editingId) return
+
+    const list = themeSettings.palettesByMode[editingCategory] || []
+    const query = (searchByCategory[editingCategory] || '').toLowerCase().trim()
+    const filtered = list.filter((p) => p.name.toLowerCase().includes(query))
+    const selectedIndex = filtered.findIndex((p) => p.id === editingId)
+
+    if (selectedIndex < 0) return
+
+    const neededPage = Math.floor(selectedIndex / PALETTES_PER_PAGE) + 1
+    setPageByCategory((prev) => {
+      if (prev[editingCategory] === neededPage) return prev
+      return { ...prev, [editingCategory]: neededPage }
+    })
+  }, [editingCategory, editingId, searchByCategory, themeSettings.palettesByMode])
+
   return (
     <>
       {Object.keys(CATEGORY_META).map((category) => {
         const list = themeSettings.palettesByMode[category]
         const query = searchByCategory[category].toLowerCase().trim()
         const filtered = list.filter((p) => p.name.toLowerCase().includes(query))
+        const totalPages = Math.max(1, Math.ceil(filtered.length / PALETTES_PER_PAGE))
+        const currentPage = Math.min(pageByCategory[category] || 1, totalPages)
+        const start = (currentPage - 1) * PALETTES_PER_PAGE
+        const end = start + PALETTES_PER_PAGE
+        const paginated = filtered.slice(start, end)
+        const hasPagination = filtered.length > PALETTES_PER_PAGE
         const activeId = themeSettings.activePaletteIds[category]
 
         return (
@@ -35,13 +89,15 @@ export default function PaletteManager({
               className="palette-search"
               placeholder="Buscar paleta por nombre..."
               value={searchByCategory[category]}
-              onChange={(e) =>
-                setSearchByCategory((prev) => ({ ...prev, [category]: e.target.value }))
-              }
+              onChange={(e) => {
+                const value = e.target.value
+                setSearchByCategory((prev) => ({ ...prev, [category]: value }))
+                setPageByCategory((prev) => ({ ...prev, [category]: 1 }))
+              }}
             />
 
-            <div className="saved-palette-list">
-              {filtered.map((palette) => {
+            <div className={`saved-palette-list${hasPagination ? ' is-paginated' : ''}`}>
+              {paginated.map((palette) => {
                 const isEditing = editingCategory === category && editingId === palette.id
                 const isActive = activeId === palette.id
                 const canDelete = list.length > 1
@@ -86,6 +142,36 @@ export default function PaletteManager({
               })}
               {filtered.length === 0 && <p className="admin-note">No hay paletas con ese nombre.</p>}
             </div>
+
+            {hasPagination ? (
+              <div className="palette-pagination">
+                <button
+                  className="btn-sm"
+                  disabled={currentPage === 1}
+                  onClick={() =>
+                    setPageByCategory((prev) => ({
+                      ...prev,
+                      [category]: Math.max(1, (prev[category] || 1) - 1),
+                    }))
+                  }
+                >
+                  Anterior
+                </button>
+                <span className="palette-page-indicator">Pagina {currentPage}/{totalPages}</span>
+                <button
+                  className="btn-sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() =>
+                    setPageByCategory((prev) => ({
+                      ...prev,
+                      [category]: Math.min(totalPages, (prev[category] || 1) + 1),
+                    }))
+                  }
+                >
+                  Siguiente
+                </button>
+              </div>
+            ) : null}
 
             <div className="palette-save-row">
               <input

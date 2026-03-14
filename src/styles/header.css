@@ -136,7 +136,7 @@
   font-weight: 700;
   font-size: var(--size-brand);
   font-family: var(--font-brand);
-  letter-spacing: 2px;
+  letter-spacing: var(--letter-brand, 2px);
   color: var(--color-brand);
 }
 
@@ -199,8 +199,12 @@
 
 .theme-segment-btn.active {
   background: var(--btn-hover);
-  color: var(--color-btn-hover);
+  color: var(--color-btn, var(--color-body));
   box-shadow: var(--shadow-sm);
+}
+
+.theme-segment-btn.active:hover {
+  color: var(--color-btn-hover);
 }
 
 .theme-segment-btn:not(.active):hover {

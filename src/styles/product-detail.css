@@ -366,7 +366,7 @@ input.detail-input {
   font-weight: 700;
   margin: 4px 0 0;
   font-family: var(--font-body);
-  color: var(--accent);
+  color: var(--color-body);
 }
 
 .product-detail-desc {
@@ -399,7 +399,7 @@ input.detail-input {
   transition: transform .2s, box-shadow .2s;
   box-shadow: var(--shadow-sm);
   background: var(--accent);
-  color: #fff;
+  color: var(--color-btn, var(--color-body));
 }
 
 .btn-whatsapp:hover {

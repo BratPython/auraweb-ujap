@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../supabaseClient'
 import Header from '../layout/Header'
+import ThemeSelector from '../ui/ThemeSelector'
 import ProductGallery from './ProductGallery'
 import ProductEditor from './ProductEditor'
 import { SkeletonDetail } from '../ui/LoadingSpinner'
 import { useAdminMode } from '../../hooks/useAdminMode'
 import ImageWithLoader from '../ui/ImageWithLoader'
 
-export default function ProductDetail() {
+export default function ProductDetail({ activeMode, onModeChange }) {
   const { id } = useParams()
   const navigate = useNavigate()
   const { adminMode } = useAdminMode()
@@ -130,7 +131,9 @@ export default function ProductDetail() {
 
   return (
     <div className="product-detail-page" style={{ minHeight: '100vh' }}>
-      <Header currentPage="product" />
+      <Header currentPage="product">
+        <ThemeSelector activeMode={activeMode} onModeChange={onModeChange} />
+      </Header>
 
       {loading ? (
         <SkeletonDetail />
@@ -259,7 +262,19 @@ export default function ProductDetail() {
         </div>
       ) : null}
 
-      {imageUploadModal ? (
+      {imageUploading ? (
+        <div className="status-modal-overlay">
+          <div className="status-modal-card">
+            <div className="uploading-state" style={{ padding: '8px 8px 2px' }}>
+              <div className="spinner"></div>
+              <h2>Cargando foto...</h2>
+              <p>Por favor no cierres esta ventana.</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {imageUploadModal && !imageUploading ? (
         <div className="status-modal-overlay">
           <div className={`status-modal-card ${imageUploadModal.type}`}>
             <div className="status-icon">

@@ -18,10 +18,11 @@ export default function TypographyEditor({ typography, allFonts, onUpdate }) {
               <select
                 className="word-select"
                 value={typography[key].family}
+                style={{ fontFamily: typography[key].family }}
                 onChange={(e) => onUpdate(key, 'family', e.target.value)}
               >
                 {allFonts.map((f) => (
-                  <option key={f.value} value={f.value} style={{ fontFamily: f.family }}>
+                  <option key={f.value} value={f.value} style={{ fontFamily: f.value }}>
                     {f.label}
                   </option>
                 ))}
@@ -60,10 +61,11 @@ export default function TypographyEditor({ typography, allFonts, onUpdate }) {
             <select
               className="word-select"
               value={typography.banner.family}
+              style={{ fontFamily: typography.banner.family }}
               onChange={(e) => onUpdate('banner', 'family', e.target.value)}
             >
               {allFonts.map((f) => (
-                <option key={f.value} value={f.value} style={{ fontFamily: f.family }}>
+                <option key={f.value} value={f.value} style={{ fontFamily: f.value }}>
                   {f.label}
                 </option>
               ))}

@@ -25,14 +25,30 @@ function AppRoutes() {
 
       {/* Protected admin-only pages (temas, usuarios) */}
       <Route element={<AdminProtectedRoute />}>
-        <Route path="/admin/temas" element={<Admin themeSettings={themeSettings} setThemeSettings={setThemeSettings} />} />
-        <Route path="/admin/usuarios" element={<AdminUsers />} />
+        <Route
+          path="/admin/temas"
+          element={
+            <Admin
+              themeSettings={themeSettings}
+              setThemeSettings={setThemeSettings}
+              activeMode={activeMode}
+              onModeChange={setActiveMode}
+            />
+          }
+        />
+        <Route
+          path="/admin/usuarios"
+          element={<AdminUsers activeMode={activeMode} onModeChange={setActiveMode} />}
+        />
       </Route>
 
       {/* Public pages — admin controls appear via toggle */}
       <Route path="/" element={<Landing activeMode={activeMode} onModeChange={setActiveMode} />} />
-      <Route path="/catalogo" element={<Catalog />} />
-      <Route path="/producto/:id" element={<ProductDetail />} />
+      <Route path="/catalogo" element={<Catalog activeMode={activeMode} onModeChange={setActiveMode} />} />
+      <Route
+        path="/producto/:id"
+        element={<ProductDetail activeMode={activeMode} onModeChange={setActiveMode} />}
+      />
     </Routes>
   )
 }

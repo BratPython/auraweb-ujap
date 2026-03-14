@@ -119,7 +119,7 @@
 
 .product-name {
   font-family: var(--font-card-title);
-  font-size: calc(var(--size-card-title) * 0.9);
+  font-size: var(--size-body);
   font-weight: 600;
   color: var(--color-title);
   flex: 1;
@@ -130,9 +130,9 @@
 
 .product-price {
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: var(--size-body);
   font-weight: 700;
-  color: var(--accent);
+  color: var(--color-body);
   margin-left: 10px;
 }
 
@@ -148,14 +148,6 @@
 
   .product-info-bar {
     padding: 10px 12px;
-  }
-
-  .product-name {
-    font-size: 13px;
-  }
-
-  .product-price {
-    font-size: 12px;
   }
 
   .add-new-card {

@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find . -type f -name \"*.js\" -o -name \"*.jsx\" -o -name \"*.css\" -o -name \"*.json\" -o -name \"*.html\" 2>/dev/null | grep -v node_modules | grep -v \".git\" | head -100)"
+    ]
+  }
+}

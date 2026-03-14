@@ -25,8 +25,20 @@ export default function CustomFontManager({ customFonts, uploadingFont, fontUplo
         onChange={handleFileChange}
       />
 
-      {fontUploadStatus ? (
-        <div className="status-modal-inline" style={{ padding: '12px 0 4px' }}>
+      {uploadingFont ? (
+        <div className="status-modal-overlay">
+          <div className="status-modal-card">
+            <div className="uploading-state" style={{ padding: '8px 8px 2px' }}>
+              <div className="spinner"></div>
+              <h2>Cargando tipografia...</h2>
+              <p>Por favor no cierres esta ventana.</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {fontUploadStatus && !uploadingFont ? (
+        <div className="status-modal-overlay">
           <div className={`status-modal-card ${fontUploadStatus.type}`}>
             <div className="status-icon">
               {fontUploadStatus.type === 'success' ? (

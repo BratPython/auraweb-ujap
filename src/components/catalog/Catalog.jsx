@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import Header from '../layout/Header'
+import ThemeSelector from '../ui/ThemeSelector'
 import ProductGrid from './ProductGrid'
 import AddProductModal from './AddProductModal'
 import { SkeletonCard } from '../ui/LoadingSpinner'
@@ -15,7 +16,7 @@ const SORT_OPTIONS = [
   { value: 'price-desc', label: 'Precio ↓' },
 ]
 
-export default function Catalog() {
+export default function Catalog({ activeMode, onModeChange }) {
   const { adminMode } = useAdminMode()
   const [activeTab, setActiveTab] = useState('Todos')
   const [showModal, setShowModal] = useState(false)
@@ -68,7 +69,9 @@ export default function Catalog() {
 
   return (
     <div className="page catalog-page">
-      <Header currentPage="catalog" />
+      <Header currentPage="catalog">
+        <ThemeSelector activeMode={activeMode} onModeChange={onModeChange} />
+      </Header>
 
       <div className="catalog-tabs">
         {CATALOG_TABS.map((tab) => (

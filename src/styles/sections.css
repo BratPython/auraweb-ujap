@@ -102,14 +102,14 @@
 
 .discover-card-name {
   font-family: var(--font-card-title);
-  font-size: 14px;
+  font-size: var(--size-body);
   color: var(--color-card-title);
   font-weight: 500;
 }
 
 .discover-card-price {
-  font-size: 13px;
-  color: var(--accent);
+  font-size: var(--size-body);
+  color: var(--color-body);
   font-weight: 600;
 }
 
@@ -162,14 +162,6 @@
 
   .discover-card-info {
     padding: 10px;
-  }
-
-  .discover-card-name {
-    font-size: 13px;
-  }
-
-  .discover-card-price {
-    font-size: 12px;
   }
 
   .discover-arrow {
@@ -322,7 +314,7 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
   padding: 40px 28px;
-  background: var(--footer-bg, var(--accent));
+  background: var(--card, var(--accent));
 }
 
 .footer-title {
@@ -330,13 +322,13 @@
   margin-bottom: 8px;
   font-family: var(--font-footer-title);
   font-size: var(--size-footer-title);
-  color: var(--color-footer-title);
+  color: var(--color-body);
 }
 
 .footer-text {
   font-family: var(--font-footer);
   font-size: var(--size-footer);
-  color: var(--color-footer);
+  color: var(--color-body);
   opacity: .95;
   line-height: 1.6;
 }
