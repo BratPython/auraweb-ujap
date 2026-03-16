@@ -5,6 +5,7 @@ export default function ProductEditor({
   editName, setEditName,
   editDesc, setEditDesc,
   editPrice, setEditPrice,
+  editDiscount, setEditDiscount,
   agotado, setAgotado,
   subcategoria,
   saving,
@@ -33,6 +34,19 @@ export default function ProductEditor({
           className="detail-input"
           value={editPrice}
           onChange={(e) => setEditPrice(e.target.value)}
+          readOnly={!isAdmin}
+        />
+      </div>
+
+      <div className="form-group">
+        <label>Descuento (%)</label>
+        <input
+          type="number"
+          min="0"
+          max="99"
+          className="detail-input"
+          value={editDiscount}
+          onChange={(e) => setEditDiscount(e.target.value)}
           readOnly={!isAdmin}
         />
       </div>

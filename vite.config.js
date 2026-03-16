@@ -4,6 +4,6 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    allowedHosts: ['life-romantic-phrase-intend.trycloudflare.com', 'localhost'], 
+    allowedHosts: ['recommendation-rocks-labeled-vegas.trycloudflare.com', 'localhost'], 
   }
 })

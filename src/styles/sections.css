@@ -26,14 +26,14 @@
 /* Discover Carousel - Smaller cards like catalog */
 .discover-carousel-wrapper {
   position: relative;
-  max-width: 720px;
+  max-width: 900px;
   margin: 32px auto 0;
   padding: 0 12px;
 }
 
 .discover-carousel {
   display: grid;
-  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  grid-template-columns: repeat(3, minmax(230px, 1fr));
   gap: 20px;
 }
 
@@ -151,12 +151,12 @@
 
 @media (max-width: 720px) {
   .discover-carousel {
-    grid-template-columns: repeat(2, minmax(140px, 1fr));
+    grid-template-columns: repeat(2, minmax(170px, 1fr));
     gap: 14px;
   }
 
   .discover-carousel-wrapper {
-    max-width: 520px;
+    max-width: 640px;
     padding: 0 6px;
   }
 

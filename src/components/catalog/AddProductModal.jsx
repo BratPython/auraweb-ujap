@@ -9,6 +9,7 @@ export default function AddProductModal({ activeTab, onClose, onSubmit }) {
   const [formName, setFormName] = useState('')
   const [formDesc, setFormDesc] = useState('')
   const [formPrice, setFormPrice] = useState('')
+  const [formDiscount, setFormDiscount] = useState('0')
   const [formSubcategory, setFormSubcategory] = useState(initialSubcategory)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [status, setStatus] = useState(null)
@@ -32,6 +33,7 @@ export default function AddProductModal({ activeTab, onClose, onSubmit }) {
         nombre: formName,
         descripcion: formDesc,
         precio: formPrice,
+        is_descuento: Math.max(0, Math.min(99, Number.parseInt(formDiscount, 10) || 0)),
         subcategoria: formSubcategory,
         imageFile: file,
       })
@@ -39,6 +41,7 @@ export default function AddProductModal({ activeTab, onClose, onSubmit }) {
       setFormName('')
       setFormDesc('')
       setFormPrice('')
+      setFormDiscount('0')
       if (fileInputRef.current) fileInputRef.current.value = null
       setStatus({ type: 'success', message: 'Producto guardado' })
       setTimeout(() => {
@@ -108,6 +111,16 @@ export default function AddProductModal({ activeTab, onClose, onSubmit }) {
                 value={formPrice}
                 onChange={(e) => setFormPrice(e.target.value)}
                 required
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label>Descuento (%)</label>
+              <input
+                type="number"
+                min="0"
+                max="99"
+                value={formDiscount}
+                onChange={(e) => setFormDiscount(e.target.value)}
               />
             </div>
           </div>

@@ -8,11 +8,14 @@ import ProductEditor from './ProductEditor'
 import { SkeletonDetail } from '../ui/LoadingSpinner'
 import { useAdminMode } from '../../hooks/useAdminMode'
 import ImageWithLoader from '../ui/ImageWithLoader'
+import { useBcvRate } from '../../hooks/useBcvRate'
+import ConfirmModal from '../layout/ConfirmModal'
 
 export default function ProductDetail({ activeMode, onModeChange }) {
   const { id } = useParams()
   const navigate = useNavigate()
   const { adminMode } = useAdminMode()
+  const { bcvRate, loading: bcvLoading } = useBcvRate()
 
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -21,11 +24,33 @@ export default function ProductDetail({ activeMode, onModeChange }) {
   const [imageUploadModal, setImageUploadModal] = useState(null)
   const [saveStatus, setSaveStatus] = useState(null)
   const [mainIdx, setMainIdx] = useState(0)
+  const [confirmDeleteImageIdx, setConfirmDeleteImageIdx] = useState(null)
 
   const [editName, setEditName] = useState('')
   const [editDesc, setEditDesc] = useState('')
   const [editPrice, setEditPrice] = useState('')
+  const [editDiscount, setEditDiscount] = useState('0')
   const [agotado, setAgotado] = useState(false)
+
+  const discount = Math.max(0, Math.min(99, Number.parseInt(product?.is_descuento, 10) || 0))
+  const basePrice = Number.parseFloat(product?.precio) || 0
+  const finalPrice = discount > 0
+    ? Math.max(0, basePrice * (1 - discount / 100))
+    : basePrice
+  const convertedPriceVes = bcvRate ? finalPrice * bcvRate : null
+
+  const formatPrice = (value) => {
+    const num = Number(value) || 0
+    return Number.isInteger(num) ? String(num) : num.toFixed(2)
+  }
+
+  const formatVes = (value) => {
+    const num = Number(value) || 0
+    return new Intl.NumberFormat('es-VE', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(num)
+  }
 
   useEffect(() => {
     async function fetchProduct() {
@@ -37,6 +62,7 @@ export default function ProductDetail({ activeMode, onModeChange }) {
         setEditName(data.nombre || '')
         setEditDesc(data.descripcion || '')
         setEditPrice(data.precio || '')
+        setEditDiscount(String(Math.max(0, Math.min(99, Number.parseInt(data.is_descuento, 10) || 0))))
         setAgotado(!!data.agotado)
       } catch (err) {
         console.error('Error fetching product details:', err)
@@ -55,12 +81,15 @@ export default function ProductDetail({ activeMode, onModeChange }) {
   async function handleUpdate() {
     setSaving(true)
     try {
+      const safeDiscount = Math.max(0, Math.min(99, Number.parseInt(editDiscount, 10) || 0))
+
       const { error } = await supabase
         .from('productos')
         .update({
           nombre: editName,
           descripcion: editDesc,
           precio: parseFloat(editPrice) || 0,
+          is_descuento: safeDiscount,
           agotado,
         })
         .eq('id', id)
@@ -117,16 +146,34 @@ export default function ProductDetail({ activeMode, onModeChange }) {
   }
 
   async function handleDeleteImage(indexToRemove) {
-    if (!window.confirm('¿Seguro que deseas quitar esta foto?')) return
     const nextImages = product.imagenes.filter((_, i) => i !== indexToRemove)
 
     try {
       setProduct((prev) => ({ ...prev, imagenes: nextImages }))
       if (mainIdx >= nextImages.length) setMainIdx(Math.max(0, nextImages.length - 1))
-      await supabase.from('productos').update({ imagenes: nextImages }).eq('id', id)
+      const { error } = await supabase.from('productos').update({ imagenes: nextImages }).eq('id', id)
+      if (error) throw error
     } catch (err) {
       console.error('Error updating images array:', err)
+      throw err
     }
+  }
+
+  function requestDeleteImage(indexToRemove) {
+    setConfirmDeleteImageIdx(indexToRemove)
+  }
+
+  async function confirmDeleteImage() {
+    if (confirmDeleteImageIdx === null) return
+    try {
+      await handleDeleteImage(confirmDeleteImageIdx)
+      setImageUploadModal({ type: 'success', message: 'Imagen eliminada correctamente' })
+      setTimeout(() => setImageUploadModal(null), 1200)
+    } catch {
+      setImageUploadModal({ type: 'error', message: 'No se pudo eliminar la imagen' })
+      setTimeout(() => setImageUploadModal(null), 1200)
+    }
+    setConfirmDeleteImageIdx(null)
   }
 
   return (
@@ -193,7 +240,7 @@ export default function ProductDetail({ activeMode, onModeChange }) {
                 isAdmin
                 uploading={imageUploading}
                 onAddImage={handleAddImage}
-                onDeleteImage={handleDeleteImage}
+                onDeleteImage={requestDeleteImage}
                 hideMainImage
               />
             )}
@@ -209,6 +256,8 @@ export default function ProductDetail({ activeMode, onModeChange }) {
               setEditDesc={setEditDesc}
               editPrice={editPrice}
               setEditPrice={setEditPrice}
+              editDiscount={editDiscount}
+              setEditDiscount={setEditDiscount}
               agotado={agotado}
               setAgotado={setAgotado}
               subcategoria={product.subcategoria}
@@ -219,7 +268,24 @@ export default function ProductDetail({ activeMode, onModeChange }) {
             <div className="product-info-panel">
               <span className="product-detail-sub">{product.subcategoria}</span>
               <h1 className="product-detail-name">{product.nombre}</h1>
-              <p className="product-detail-price">${product.precio}</p>
+              {discount > 0 ? (
+                <div className="product-detail-price-wrap">
+                  <p className="product-detail-price-original">${formatPrice(basePrice)}</p>
+                  <p className="product-detail-price product-detail-price-final">${formatPrice(finalPrice)}</p>
+                </div>
+              ) : (
+                <p className="product-detail-price">${formatPrice(basePrice)}</p>
+              )}
+              {bcvLoading ? (
+                <p className="product-detail-price-ves product-detail-price-ves-muted">Calculando en Bs...</p>
+              ) : convertedPriceVes ? (
+                <>
+                  <p className="product-detail-price-ves">Bs. {formatVes(convertedPriceVes)}</p>
+                  <p className="product-detail-rate">Tasa BCV oficial: {formatVes(bcvRate)} Bs/USD</p>
+                </>
+              ) : (
+                <p className="product-detail-price-ves product-detail-price-ves-muted">No se pudo obtener la tasa BCV</p>
+              )}
               {product.descripcion && (
                 <p className="product-detail-desc">{product.descripcion}</p>
               )}
@@ -292,6 +358,15 @@ export default function ProductDetail({ activeMode, onModeChange }) {
           </div>
         </div>
       ) : null}
+
+      <ConfirmModal
+        open={confirmDeleteImageIdx !== null}
+        title="Eliminar foto"
+        message="Esta foto se eliminara del producto. Esta accion no se puede deshacer."
+        confirmLabel="Eliminar"
+        onConfirm={confirmDeleteImage}
+        onCancel={() => setConfirmDeleteImageIdx(null)}
+      />
     </div>
   )
 }

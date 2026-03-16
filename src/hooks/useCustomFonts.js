@@ -114,8 +114,10 @@ export function useCustomFonts() {
       const { error } = await supabase.from('custom_fonts').delete().eq('name', fontName)
       if (error) throw error
       setCustomFonts((prev) => prev.filter((f) => f.name !== fontName))
+      return true
     } catch (err) {
       console.error('Error eliminando fuente personalizada:', err)
+      throw err
     }
   }
 

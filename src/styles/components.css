@@ -265,6 +265,43 @@
   padding: 30px 10px;
 }
 
+/* Confirmation modal */
+.confirm-modal-content {
+  max-width: 420px;
+  padding: 24px;
+}
+
+.confirm-modal-header h3 {
+  margin: 0;
+  font-family: var(--font-title, var(--font-body));
+  color: var(--color-title, var(--color-body));
+  font-size: 20px;
+}
+
+.confirm-modal-message {
+  margin: 10px 0 0;
+  font-family: var(--font-body);
+  color: var(--color-body);
+  line-height: 1.5;
+  opacity: 0.9;
+}
+
+.confirm-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.confirm-danger-btn {
+  background: #d44;
+  color: #fff;
+}
+
+.confirm-danger-btn:hover {
+  background: #bf2e2e;
+}
+
 /* Image loading state */
 .image-loader-wrap {
   position: relative;

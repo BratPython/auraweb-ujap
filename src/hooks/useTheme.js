@@ -4,6 +4,9 @@ import { FALLBACK_STATE } from '../config/theme'
 import { normalizeThemeSettings, buildVarsFromTypography, getActivePaletteByMode } from '../utils/theme'
 import { registerFont } from '../utils/fonts'
 
+const GLOBAL_THEME_ID = 'global'
+const SAVE_DEBOUNCE_MS = 350
+
 function parseColorToRgb(color) {
   if (!color || typeof color !== 'string') return null
   const value = color.trim()
@@ -55,7 +58,6 @@ function pickBlackOrWhiteByContrast(bgColor) {
 export function useTheme() {
   const [themeSettings, setThemeSettings] = useState(null)
   const [activeMode, setActiveMode] = useState('light')
-  const [globalDocId, setGlobalDocId] = useState('global')
   const lastLoadedRef = useRef('')
 
   // Fetch theme from Supabase on mount
@@ -65,8 +67,8 @@ export function useTheme() {
         const { data, error } = await supabase
           .from('theme_settings')
           .select('*')
-          .eq('is_active', true)
-          .limit(1)
+          .eq('id', GLOBAL_THEME_ID)
+          .maybeSingle()
 
         if (error) {
           console.error('Error cargando theme_settings:', error)
@@ -74,15 +76,29 @@ export function useTheme() {
           return
         }
 
-        if (data && data.length > 0) {
-          const doc = data[0]
-          setGlobalDocId(doc.id)
-          const normalized = normalizeThemeSettings(doc.settings)
+        if (data?.settings) {
+          const normalized = normalizeThemeSettings(data.settings)
           lastLoadedRef.current = JSON.stringify(normalized)
           setThemeSettings(normalized)
-        } else {
-          setThemeSettings(FALLBACK_STATE)
+          return
         }
+
+        const fallbackPayload = FALLBACK_STATE
+        const { error: insertError } = await supabase
+          .from('theme_settings')
+          .insert({
+            id: GLOBAL_THEME_ID,
+            settings: fallbackPayload,
+            is_active: true,
+            updated_at: new Date().toISOString(),
+          })
+
+        if (insertError) {
+          console.error('Error creando theme_settings global:', insertError)
+        }
+
+        lastLoadedRef.current = JSON.stringify(fallbackPayload)
+        setThemeSettings(fallbackPayload)
       } catch (err) {
         console.error('Excepcion cargando theme:', err)
         setThemeSettings(FALLBACK_STATE)
@@ -101,25 +117,49 @@ export function useTheme() {
       if (payloadString === lastLoadedRef.current) return
 
       try {
-        const { error } = await supabase.from('theme_settings').upsert({
-          id: globalDocId,
-          settings: themeSettings,
-          is_active: true,
-          updated_at: new Date().toISOString(),
-        })
+        const now = new Date().toISOString()
 
-        if (error) {
-          console.error('Error guardando cambios en Supabase:', error)
-        } else {
-          lastLoadedRef.current = payloadString
+        const { data: updatedRow, error: updateError } = await supabase
+          .from('theme_settings')
+          .update({
+            settings: themeSettings,
+            is_active: true,
+            updated_at: now,
+          })
+          .eq('id', GLOBAL_THEME_ID)
+          .select('id')
+          .maybeSingle()
+
+        if (updateError) {
+          console.error('Error actualizando theme_settings:', updateError)
+          return
         }
+
+        if (!updatedRow) {
+          const { error: insertError } = await supabase
+            .from('theme_settings')
+            .insert({
+              id: GLOBAL_THEME_ID,
+              settings: themeSettings,
+              is_active: true,
+              updated_at: now,
+            })
+
+          if (insertError) {
+            console.error('Error insertando theme_settings global:', insertError)
+            return
+          }
+        }
+
+        lastLoadedRef.current = payloadString
       } catch (e) {
         console.error('Fallo general al guardar theme:', e)
       }
     }
 
-    saveChanges()
-  }, [themeSettings, globalDocId])
+    const timer = setTimeout(saveChanges, SAVE_DEBOUNCE_MS)
+    return () => clearTimeout(timer)
+  }, [themeSettings])
 
   // Load custom fonts globally so they work outside admin pages too.
   useEffect(() => {

@@ -37,12 +37,14 @@ export function useProducts(activeTab) {
       const { error } = await supabase.from('productos').update({ is_active: false }).eq('id', id)
       if (error) throw error
       setProducts((prev) => prev.filter((p) => p.id !== id))
+      return true
     } catch (err) {
       console.error('Error deleting product:', err)
+      throw err
     }
   }
 
-  async function createProduct({ nombre, descripcion, precio, subcategoria, imageFile }) {
+  async function createProduct({ nombre, descripcion, precio, is_descuento = 0, subcategoria, imageFile }) {
     const fileExt = imageFile.name.split('.').pop()
     const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`
 
@@ -72,6 +74,7 @@ export function useProducts(activeTab) {
           categoria: category,
           subcategoria,
           precio: parseFloat(precio) || 0,
+          is_descuento: Math.max(0, Math.min(99, Number.parseInt(is_descuento, 10) || 0)),
           imagenes: [imageUrl],
           theme_config: { bg: '#f6f0e6', color: '#2b2318' },
           is_active: true,

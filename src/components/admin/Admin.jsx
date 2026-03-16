@@ -11,6 +11,7 @@ import TypographyEditor from './TypographyEditor'
 import CustomFontManager from './CustomFontManager'
 import Header from '../layout/Header'
 import ThemeSelector from '../ui/ThemeSelector'
+import ConfirmModal from '../layout/ConfirmModal'
 
 function parseColorToRgb(color) {
   if (!color || typeof color !== 'string') return null
@@ -68,6 +69,8 @@ export default function Admin({ themeSettings, setThemeSettings, activeMode, onM
   const [hexDrafts, setHexDrafts] = useState({})
   const [paletteClipboard, setPaletteClipboard] = useState(null)
   const [clipboardNote, setClipboardNote] = useState('')
+  const [confirmDialog, setConfirmDialog] = useState(null)
+  const [deleteStatus, setDeleteStatus] = useState(null)
 
   const { customFonts, allFonts, uploadingFont, fontUploadStatus, handleFontUpload, removeCustomFont } = useCustomFonts()
 
@@ -198,6 +201,42 @@ export default function Admin({ themeSettings, setThemeSettings, activeMode, onM
     if (editingCategory === category && editingId === id) {
       setEditingId(filtered[0].id)
     }
+  }
+
+  function requestDeletePalette(category, id) {
+    const palette = (themeSettings.palettesByMode[category] || []).find((p) => p.id === id)
+    if (!palette) return
+
+    setConfirmDialog({
+      type: 'palette',
+      title: 'Eliminar paleta',
+      message: `Se eliminara la paleta "${palette.name}". Esta accion no se puede deshacer.`,
+      onConfirm: () => {
+        deletePalette(category, id)
+        setDeleteStatus({ type: 'success', message: 'Paleta eliminada correctamente' })
+        setTimeout(() => setDeleteStatus(null), 1200)
+        setConfirmDialog(null)
+      },
+    })
+  }
+
+  function requestRemoveCustomFont(fontName) {
+    setConfirmDialog({
+      type: 'font',
+      title: 'Eliminar tipografia',
+      message: `Se eliminara la tipografia "${fontName}". Esta accion no se puede deshacer.`,
+      onConfirm: async () => {
+        try {
+          await removeCustomFont(fontName)
+          setDeleteStatus({ type: 'success', message: 'Tipografia eliminada correctamente' })
+          setTimeout(() => setDeleteStatus(null), 1200)
+        } catch {
+          setDeleteStatus({ type: 'error', message: 'No se pudo eliminar la tipografia' })
+          setTimeout(() => setDeleteStatus(null), 1200)
+        }
+        setConfirmDialog(null)
+      },
+    })
   }
 
   // ──── Palette values ────
@@ -396,7 +435,7 @@ export default function Admin({ themeSettings, setThemeSettings, activeMode, onM
             onSetActive={setActivePalette}
             onAddPalette={addPalette}
             onRenamePalette={renamePalette}
-            onDeletePalette={deletePalette}
+            onDeletePalette={requestDeletePalette}
             onCopyPalette={copyPalette}
             onPasteLocal={pastePaletteFromLocal}
             onPasteSystem={pastePaletteFromSystem}
@@ -422,7 +461,7 @@ export default function Admin({ themeSettings, setThemeSettings, activeMode, onM
               uploadingFont={uploadingFont}
               fontUploadStatus={fontUploadStatus}
               onUpload={handleFontUpload}
-              onRemove={removeCustomFont}
+              onRemove={requestRemoveCustomFont}
             />
           </div>
         </div>
@@ -439,6 +478,34 @@ export default function Admin({ themeSettings, setThemeSettings, activeMode, onM
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        open={!!confirmDialog}
+        title={confirmDialog?.title || 'Confirmar accion'}
+        message={confirmDialog?.message || ''}
+        confirmLabel="Eliminar"
+        onConfirm={() => confirmDialog?.onConfirm?.()}
+        onCancel={() => setConfirmDialog(null)}
+      />
+
+      {deleteStatus ? (
+        <div className="status-modal-overlay">
+          <div className={`status-modal-card ${deleteStatus.type}`}>
+            <div className="status-icon">
+              {deleteStatus.type === 'success' ? (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 13l4 4L19 7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6l-12 12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </div>
+            <p>{deleteStatus.message}</p>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
