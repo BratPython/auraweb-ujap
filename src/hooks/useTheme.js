@@ -6,6 +6,27 @@ import { registerFont } from '../utils/fonts'
 
 const GLOBAL_THEME_ID = 'global'
 const SAVE_DEBOUNCE_MS = 350
+const THEME_CACHE_KEY = 'aura:themeSettingsCache'
+
+function readCachedThemeSettings() {
+  try {
+    const raw = localStorage.getItem(THEME_CACHE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object') return null
+    return normalizeThemeSettings(parsed)
+  } catch {
+    return null
+  }
+}
+
+function writeCachedThemeSettings(settings) {
+  try {
+    localStorage.setItem(THEME_CACHE_KEY, JSON.stringify(settings))
+  } catch {
+    // Ignore local storage failures.
+  }
+}
 
 function parseColorToRgb(color) {
   if (!color || typeof color !== 'string') return null
@@ -72,13 +93,17 @@ export function useTheme() {
 
         if (error) {
           console.error('Error cargando theme_settings:', error)
-          setThemeSettings(FALLBACK_STATE)
+          const cached = readCachedThemeSettings()
+          const fallback = cached || FALLBACK_STATE
+          lastLoadedRef.current = JSON.stringify(fallback)
+          setThemeSettings(fallback)
           return
         }
 
         if (data?.settings) {
           const normalized = normalizeThemeSettings(data.settings)
           lastLoadedRef.current = JSON.stringify(normalized)
+          writeCachedThemeSettings(normalized)
           setThemeSettings(normalized)
           return
         }
@@ -97,11 +122,17 @@ export function useTheme() {
           console.error('Error creando theme_settings global:', insertError)
         }
 
-        lastLoadedRef.current = JSON.stringify(fallbackPayload)
-        setThemeSettings(fallbackPayload)
+        const cached = readCachedThemeSettings()
+        const fallback = cached || fallbackPayload
+        lastLoadedRef.current = JSON.stringify(fallback)
+        writeCachedThemeSettings(fallback)
+        setThemeSettings(fallback)
       } catch (err) {
         console.error('Excepcion cargando theme:', err)
-        setThemeSettings(FALLBACK_STATE)
+        const cached = readCachedThemeSettings()
+        const fallback = cached || FALLBACK_STATE
+        lastLoadedRef.current = JSON.stringify(fallback)
+        setThemeSettings(fallback)
       }
     }
 
@@ -152,6 +183,7 @@ export function useTheme() {
         }
 
         lastLoadedRef.current = payloadString
+        writeCachedThemeSettings(themeSettings)
       } catch (e) {
         console.error('Fallo general al guardar theme:', e)
       }

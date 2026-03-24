@@ -1,5 +1,6 @@
 export const BUILTIN_FONTS = [
-  { label: 'AuraLogo', value: "'AuraLogo', Georgia, serif", family: 'AuraLogo' },
+  { label: 'Baristo', value: "'Baristo', Georgia, serif", family: 'Baristo' },
+  { label: 'Creato Display', value: "'Creato Display', Arial, sans-serif", family: 'Creato Display' },
   { label: 'Playfair Display', value: "'Playfair Display', Georgia, serif", family: 'Playfair Display' },
   { label: 'Georgia', value: 'Georgia, serif', family: 'Georgia' },
   { label: 'Inter', value: "'Inter', sans-serif", family: 'Inter' },

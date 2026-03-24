@@ -21,10 +21,12 @@ export default function Footer() {
       <div className="footer-col">
         <strong className="footer-title">Contacto</strong>
         <span className="footer-text">
-          <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>
+          <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" className="footer-contact-link">
+            <span className="footer-social-icon footer-social-icon-whatsapp" aria-hidden="true" />
             WhatsApp: 0424-4405113
           </a><br />
-          <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>
+          <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="footer-contact-link">
+            <span className="footer-social-icon footer-social-icon-instagram" aria-hidden="true" />
             Instagram: @theaura.a
           </a><br />
           Horario<br />
@@ -37,11 +39,15 @@ export default function Footer() {
       <div className="footer-col">
         <strong className="footer-title">Enlaces</strong>
         <span className="footer-text">
-          <a onClick={() => navigate('/catalogo')} style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}>
+          <a className="footer-text-link" onClick={() => navigate('/catalogo')}>
             Ver catálogo completo
           </a><br />
-          Cómo comprar<br />
-          FaQ
+          <a className="footer-text-link" href="#" onClick={(e) => e.preventDefault()}>
+            Cómo comprar
+          </a><br />
+          <a className="footer-text-link" href="#" onClick={(e) => e.preventDefault()}>
+            FaQ
+          </a>
         </span>
       </div>
     </footer>

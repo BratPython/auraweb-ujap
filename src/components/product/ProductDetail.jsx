@@ -10,12 +10,14 @@ import { useAdminMode } from '../../hooks/useAdminMode'
 import ImageWithLoader from '../ui/ImageWithLoader'
 import { useBcvRate } from '../../hooks/useBcvRate'
 import ConfirmModal from '../layout/ConfirmModal'
+import { useShop } from '../../hooks/useShop'
 
 export default function ProductDetail({ activeMode, onModeChange }) {
   const { id } = useParams()
   const navigate = useNavigate()
   const { adminMode } = useAdminMode()
   const { bcvRate, loading: bcvLoading } = useBcvRate()
+  const { addToCart } = useShop()
 
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -30,6 +32,7 @@ export default function ProductDetail({ activeMode, onModeChange }) {
   const [editDesc, setEditDesc] = useState('')
   const [editPrice, setEditPrice] = useState('')
   const [editDiscount, setEditDiscount] = useState('0')
+  const [editStock, setEditStock] = useState('0')
   const [agotado, setAgotado] = useState(false)
 
   const discount = Math.max(0, Math.min(99, Number.parseInt(product?.is_descuento, 10) || 0))
@@ -63,6 +66,7 @@ export default function ProductDetail({ activeMode, onModeChange }) {
         setEditDesc(data.descripcion || '')
         setEditPrice(data.precio || '')
         setEditDiscount(String(Math.max(0, Math.min(99, Number.parseInt(data.is_descuento, 10) || 0))))
+        setEditStock(String(Math.max(0, Number.parseInt(data.stock, 10) || 0)))
         setAgotado(!!data.agotado)
       } catch (err) {
         console.error('Error fetching product details:', err)
@@ -82,6 +86,8 @@ export default function ProductDetail({ activeMode, onModeChange }) {
     setSaving(true)
     try {
       const safeDiscount = Math.max(0, Math.min(99, Number.parseInt(editDiscount, 10) || 0))
+      const safeStock = Math.max(0, Number.parseInt(editStock, 10) || 0)
+      const computedAgotado = safeStock <= 0 ? true : agotado
 
       const { error } = await supabase
         .from('productos')
@@ -90,11 +96,13 @@ export default function ProductDetail({ activeMode, onModeChange }) {
           descripcion: editDesc,
           precio: parseFloat(editPrice) || 0,
           is_descuento: safeDiscount,
-          agotado,
+          stock: safeStock,
+          agotado: computedAgotado,
         })
         .eq('id', id)
 
       if (error) throw error
+      setProduct((prev) => (prev ? { ...prev, stock: safeStock, agotado: computedAgotado } : prev))
       setSaveStatus({ type: 'success', message: 'Cambios guardados' })
       setTimeout(() => setSaveStatus(null), 1000)
     } catch (err) {
@@ -174,6 +182,37 @@ export default function ProductDetail({ activeMode, onModeChange }) {
       setTimeout(() => setImageUploadModal(null), 1200)
     }
     setConfirmDeleteImageIdx(null)
+  }
+
+  function handleAddToCart() {
+    if (!product) return
+
+    const stock = Math.max(0, Number.parseInt(product.stock, 10) || 0)
+    const isOut = !!product.agotado || stock <= 0
+    if (isOut) {
+      setSaveStatus({ type: 'error', message: 'Producto agotado' })
+      setTimeout(() => setSaveStatus(null), 1200)
+      return
+    }
+
+    const result = addToCart({
+      id: product.id,
+      code: `PRD-${String(product.id).slice(0, 8)}`,
+      name: product.nombre,
+      price: finalPrice,
+      stock,
+      exentoIva: false,
+      discountPct: 0,
+    }, 1)
+
+    if (!result.ok) {
+      setSaveStatus({ type: 'error', message: result.error || 'No se pudo agregar al carrito' })
+      setTimeout(() => setSaveStatus(null), 1200)
+      return
+    }
+
+    setSaveStatus({ type: 'success', message: 'Producto agregado al carrito' })
+    setTimeout(() => setSaveStatus(null), 1200)
   }
 
   return (
@@ -258,6 +297,8 @@ export default function ProductDetail({ activeMode, onModeChange }) {
               setEditPrice={setEditPrice}
               editDiscount={editDiscount}
               setEditDiscount={setEditDiscount}
+              editStock={editStock}
+              setEditStock={setEditStock}
               agotado={agotado}
               setAgotado={setAgotado}
               subcategoria={product.subcategoria}
@@ -289,17 +330,12 @@ export default function ProductDetail({ activeMode, onModeChange }) {
               {product.descripcion && (
                 <p className="product-detail-desc">{product.descripcion}</p>
               )}
-              {agotado ? (
+              {(agotado || (Number.parseInt(product.stock, 10) || 0) <= 0) ? (
                 <div className="product-detail-status agotado">Este producto está agotado</div>
               ) : (
-                <a
-                  href="https://wa.link/ajq4wy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-whatsapp"
-                >
-                  Consultar disponibilidad
-                </a>
+                <button className="btn-whatsapp" onClick={handleAddToCart}>
+                  Agregar al carrito
+                </button>
               )}
               <button className="back-link" onClick={() => navigate('/catalogo')}>
                 ← Volver al catálogo

@@ -1,7 +1,7 @@
 export const BASE_FONTS = {
-  logo: "'AuraLogo', Georgia, serif",
-  serif: "'Playfair Display', Georgia, serif",
-  body: "'Inter', sans-serif",
+  logo: "'Baristo', Georgia, serif",
+  serif: "'Baristo', Georgia, serif",
+  body: "'Creato Display', Arial, sans-serif",
 }
 
 export const BASE_PALETTE_LIGHT = {

@@ -1,19 +1,29 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { WHATSAPP_URL } from '../../config/constants'
+import { INSTAGRAM_URL } from '../../config/constants'
 import { supabase } from '../../supabaseClient'
 import { useAdminMode } from '../../hooks/useAdminMode'
+import { useShop } from '../../hooks/useShop'
 
 export default function Header({ children, currentPage }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   const navigate = useNavigate()
   const { isAdmin, adminMode, setAdminMode } = useAdminMode()
+  const { currentUser, logoutUser } = useShop()
 
   const navLinks = [
     { label: 'Inicio', path: '/', id: 'home' },
     { label: 'Catálogo', path: '/catalogo', id: 'catalog' },
+    ...(currentUser
+      ? [
+          { label: 'Carrito', path: '/facturas/carrito', id: 'facturas-cart' },
+          { label: 'Pedidos', path: '/facturas/mis-facturas', id: 'facturas-orders' },
+        ]
+      : [{ label: 'Iniciar sesión', path: '/facturas/auth', id: 'facturas-auth' }]),
     { label: 'WhatsApp', href: WHATSAPP_URL, id: 'whatsapp' },
+    { label: 'Instagram', href: INSTAGRAM_URL, id: 'instagram' },
   ]
 
   async function handleAdminLogout() {
@@ -83,7 +93,26 @@ export default function Header({ children, currentPage }) {
         </div>
 
         <div className="header-right">
+          {currentUser ? (
+            <div className="session-chip" title={`Sesión activa: ${currentUser.legalName}`}>
+              <span className="session-dot" aria-hidden="true" />
+              <span className="session-text">{currentUser.legalName}</span>
+            </div>
+          ) : null}
+
           {children}
+
+          {currentUser ? (
+            <button
+              type="button"
+              className="session-logout-btn"
+              onClick={logoutUser}
+              aria-label="Cerrar sesión"
+              title="Cerrar sesión"
+            >
+              Salir
+            </button>
+          ) : null}
 
           <button
             className={`hamburger${menuOpen ? ' open' : ''}`}

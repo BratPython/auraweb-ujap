@@ -4,14 +4,6 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap');
 
-@font-face {
-  font-family: 'AuraLogo';
-  src: url('/Minecraft.ttf');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
 :root {
   /* Defaults injected by JS, fallbacks defined here just in case */
   --bg: #f6f0e6;
@@ -24,17 +16,17 @@
 
   --color-brand: #2b2318;
   --size-brand: 32px;
-  --font-brand: 'AuraLogo', Georgia, serif;
+  --font-brand: 'Baristo', Georgia, serif;
   --letter-brand: 2px;
   --color-nav: #2b2318;
   --size-nav: 14px;
   --font-nav: 'Inter', sans-serif;
   --color-hero: #d96b2d;
   --size-hero: clamp(48px, 10vw, 110px);
-  --font-hero: 'AuraLogo', Georgia, serif;
+  --font-hero: 'Baristo', Georgia, serif;
   --color-hero-alt: #c44b6a;
   --size-hero-alt: clamp(48px, 10vw, 110px);
-  --font-hero-alt: 'AuraLogo', Georgia, serif;
+  --font-hero-alt: 'Baristo', Georgia, serif;
   --color-title: #2b2318;
   --size-title: clamp(22px, 4vw, 36px);
   --font-title: 'Playfair Display', Georgia, serif;
@@ -43,26 +35,26 @@
   --font-subtitle: 'Playfair Display', Georgia, serif;
   --color-card-title: #bfae90;
   --size-card-title: 16px;
-  --font-card-title: 'Inter', sans-serif;
+  --font-card-title: 'Creato Display', Arial, sans-serif;
   --color-body: #2b2318;
   --size-body: 16px;
-  --font-body: 'Inter', sans-serif;
+  --font-body: 'Creato Display', Arial, sans-serif;
   --color-btn: #2b2318;
   --size-btn: 14px;
-  --font-btn: 'Inter', sans-serif;
+  --font-btn: 'Creato Display', Arial, sans-serif;
   --color-btn-hover: #ffffff;
   --size-btn-hover: 14px;
-  --font-btn-hover: 'Inter', sans-serif;
+  --font-btn-hover: 'Creato Display', Arial, sans-serif;
   --color-footer-title: #ffffff;
   --size-footer-title: 16px;
-  --font-footer-title: 'Inter', sans-serif;
+  --font-footer-title: 'Creato Display', Arial, sans-serif;
   --color-footer: #ffffff;
   --size-footer: 14px;
-  --font-footer: 'Inter', sans-serif;
+  --font-footer: 'Creato Display', Arial, sans-serif;
 
   --banner-color-1: #c44b6a;
   --banner-color-2: #d96b2d;
-  --font-banner: 'AuraLogo', Georgia, serif;
+  --font-banner: 'Baristo', Georgia, serif;
   --size-banner: clamp(48px, 10vw, 110px);
   --letter-banner: 1px;
 

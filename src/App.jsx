@@ -1,5 +1,5 @@
 import React from 'react'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import Landing from './components/landing/Landing'
 import Admin from './components/admin/Admin'
 import Catalog from './components/catalog/Catalog'
@@ -10,6 +10,11 @@ import AdminUsers from './components/admin/AdminUsers'
 import LoadingSpinner from './components/ui/LoadingSpinner'
 import { AdminProvider } from './hooks/useAdminMode'
 import { useTheme } from './hooks/useTheme'
+import { ShopProvider } from './hooks/useShop'
+import AuthPage from './components/shop/AuthPage'
+import CartPage from './components/shop/CartPage'
+import FiscalInvoicePage from './components/shop/FiscalInvoicePage'
+import MyInvoicesPage from './components/shop/MyInvoicesPage'
 import './styles/index.css'
 
 function AppRoutes() {
@@ -49,6 +54,19 @@ function AppRoutes() {
         path="/producto/:id"
         element={<ProductDetail activeMode={activeMode} onModeChange={setActiveMode} />}
       />
+
+      {/* Facturas fiscal flow */}
+      <Route path="/facturas/auth" element={<AuthPage />} />
+      <Route path="/facturas/carrito" element={<CartPage />} />
+      <Route path="/facturas/factura" element={<FiscalInvoicePage />} />
+      <Route path="/facturas/factura/:invoiceId" element={<FiscalInvoicePage />} />
+      <Route path="/facturas/mis-facturas" element={<MyInvoicesPage />} />
+
+      {/* Legacy shop aliases */}
+      <Route path="/shop/auth" element={<Navigate to="/facturas/auth" replace />} />
+      <Route path="/shop/carrito" element={<Navigate to="/facturas/carrito" replace />} />
+      <Route path="/shop/factura" element={<Navigate to="/facturas/factura" replace />} />
+      <Route path="/shop/mis-facturas" element={<Navigate to="/facturas/mis-facturas" replace />} />
     </Routes>
   )
 }
@@ -57,7 +75,9 @@ function App() {
   return (
     <BrowserRouter>
       <AdminProvider>
-        <AppRoutes />
+        <ShopProvider>
+          <AppRoutes />
+        </ShopProvider>
       </AdminProvider>
     </BrowserRouter>
   )

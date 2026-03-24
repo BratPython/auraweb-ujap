@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { createPortal } from 'react-dom'
 import { supabase } from '../../supabaseClient'
 import { useAdminMode } from '../../hooks/useAdminMode'
 import ImageWithLoader from '../ui/ImageWithLoader'
@@ -8,10 +9,9 @@ export default function DiscoverSection() {
   const [displayProducts, setDisplayProducts] = useState([]) // Products to show in grid
   const [featuredProducts, setFeaturedProducts] = useState([]) // Only destacado=true products (for modal)
   const [allProducts, setAllProducts] = useState([])
-  const [showSlotsModal, setShowSlotsModal] = useState(false)
-  const [showProductPicker, setShowProductPicker] = useState(false)
+  const [showFeaturedModal, setShowFeaturedModal] = useState(false)
   const [search, setSearch] = useState('')
-  const [saving, setSaving] = useState(null)
+  const [savingProductId, setSavingProductId] = useState(null)
   const [offset, setOffset] = useState(0)
   const [isAnimating, setIsAnimating] = useState(false)
   const [animDir, setAnimDir] = useState('right')
@@ -21,7 +21,7 @@ export default function DiscoverSection() {
   const navigate = useNavigate()
   const { adminMode } = useAdminMode()
 
-  const maxDisplay = 9
+  const maxDisplay = 12
 
   function shuffle(items) {
     const next = [...items]
@@ -32,12 +32,12 @@ export default function DiscoverSection() {
     return next
   }
 
-  // Fetch featured products (3 selected by admin) and randomize the rest
+  // Fetch featured products (3 selected by admin) and randomize the rest.
   const fetchFeatured = useCallback(async () => {
     try {
       const { data: featuredData, error: featuredError } = await supabase
         .from('productos')
-        .select('id, nombre, imagenes, precio, destacado')
+        .select('id, nombre, imagenes, precio, destacado, created_at')
         .eq('is_active', true)
         .eq('destacado', true)
         .order('created_at', { ascending: false })
@@ -50,40 +50,34 @@ export default function DiscoverSection() {
 
       const { data: allData, error: allError } = await supabase
         .from('productos')
-        .select('id, nombre, imagenes, precio, created_at')
+        .select('id, nombre, imagenes, precio, destacado, created_at')
         .eq('is_active', true)
 
       if (allError) throw allError
 
       const allItems = allData || []
+      setAllProducts(allItems)
+
       if (allItems.length === 0) {
         setDisplayProducts([])
         setOffset(0)
         return
       }
 
-      // If no featured, fall back to 9 most recent products for display
-      if (!featuredData || featuredData.length === 0) {
-        const recent = [...allItems]
-          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-          .slice(0, maxDisplay)
-        setDisplayProducts(recent)
-        setOffset(0)
-        return
-      }
-
-      const featuredIds = new Set(featuredData.map((p) => p.id))
+      const fixedFeatured = (featuredData || []).slice(0, 3)
+      const featuredIds = new Set(fixedFeatured.map((p) => p.id))
       const others = allItems.filter((p) => !featuredIds.has(p.id))
       const randomized = shuffle(others)
-      const nextDisplay = [...featuredData, ...randomized].slice(0, maxDisplay)
+      const nextDisplay = [...fixedFeatured, ...randomized].slice(0, maxDisplay)
       setDisplayProducts(nextDisplay)
       setOffset(0)
     } catch {
       setFeaturedProducts([])
+      setAllProducts([])
       setDisplayProducts([])
       setOffset(0)
     }
-  }, [])
+  }, [maxDisplay])
 
   useEffect(() => { fetchFeatured() }, [fetchFeatured])
 
@@ -101,68 +95,43 @@ export default function DiscoverSection() {
     setOffset(0)
   }, [itemsPerView])
 
-  // Fetch all products for picker (when modal opens)
+  // Refresh products when featured modal opens.
   useEffect(() => {
-    if (!showProductPicker) return
-    async function fetchAll() {
-      const { data } = await supabase
-        .from('productos')
-        .select('id, nombre, imagenes, precio, destacado')
-        .eq('is_active', true)
-        .order('nombre')
-      setAllProducts(data || [])
+    if (!showFeaturedModal) return
+    fetchFeatured()
+  }, [showFeaturedModal, fetchFeatured])
+
+  useEffect(() => {
+    if (!showFeaturedModal) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prevOverflow
     }
-    fetchAll()
-  }, [showProductPicker])
+  }, [showFeaturedModal])
 
   // Filter products by search
   const filteredProducts = allProducts.filter((p) =>
     p.nombre?.toLowerCase().includes(search.toLowerCase().trim())
   )
 
-  // Build 3 fixed slots for the modal (featured products + empty slots)
-  const slots = [
-    featuredProducts[0] || null,
-    featuredProducts[1] || null,
-    featuredProducts[2] || null
-  ]
+  async function toggleFeatured(product) {
+    const isFeatured = featuredProducts.some((f) => f.id === product.id)
+    if (!isFeatured && featuredProducts.length >= 3) return
 
-  // Remove product from slot (clear destacado)
-  async function removeFromSlot(slotIndex) {
-    const product = slots[slotIndex]
-    if (!product) return
-
-    setSaving(slotIndex)
+    setSavingProductId(product.id)
     try {
-      await supabase.from('productos').update({ destacado: false }).eq('id', product.id)
+      await supabase
+        .from('productos')
+        .update({ destacado: !isFeatured })
+        .eq('id', product.id)
+
       await fetchFeatured()
     } catch (err) {
-      console.error('Error removing from slot:', err)
+      console.error('Error toggling destacado:', err)
     } finally {
-      setSaving(null)
+      setSavingProductId(null)
     }
-  }
-
-  // Add product to slot
-  async function addToSlot(product) {
-    setSaving('adding')
-    try {
-      // Mark new product as destacado
-      await supabase.from('productos').update({ destacado: true }).eq('id', product.id)
-
-      await fetchFeatured()
-      setShowProductPicker(false)
-      setSearch('')
-    } catch (err) {
-      console.error('Error adding to slot:', err)
-    } finally {
-      setSaving(null)
-    }
-  }
-
-  function openProductPicker() {
-    setShowProductPicker(true)
-    setSearch('')
   }
 
   const maxOffset = Math.max(0, displayProducts.length - itemsPerView)
@@ -209,6 +178,75 @@ export default function DiscoverSection() {
     setOffset((prev) => (prev + itemsPerView > maxOffset ? 0 : prev + itemsPerView))
   }
 
+  const featuredModal = showFeaturedModal && typeof document !== 'undefined'
+    ? createPortal(
+      <div className="discover-featured-overlay" onClick={() => setShowFeaturedModal(false)}>
+        <div className="discover-featured-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="discover-featured-header">
+            <h3>Productos Destacados</h3>
+            <button className="discover-featured-close" onClick={() => setShowFeaturedModal(false)}>✕</button>
+          </div>
+
+          <p className="discover-featured-hint">
+            Selecciona hasta 3 productos destacados. El resto del carrusel se llena aleatoriamente hasta 12 productos.
+          </p>
+
+          <div className="discover-featured-search">
+            <span className="discover-featured-search-icon">🔍</span>
+            <input
+              type="text"
+              placeholder="Buscar productos..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              autoFocus
+            />
+          </div>
+
+          <div className="discover-featured-grid">
+            {filteredProducts.map((p) => {
+              const isAlreadyFeatured = featuredProducts.some((f) => f?.id === p.id)
+              const canSelect = isAlreadyFeatured || featuredProducts.length < 3
+              return (
+                <div
+                  key={p.id}
+                  className={`discover-featured-card ${!canSelect ? 'is-disabled' : ''}`}
+                >
+                  <div className="discover-featured-card-image">
+                    {p.imagenes?.[0] ? (
+                      <ImageWithLoader src={p.imagenes[0]} alt={p.nombre} />
+                    ) : (
+                      <span className="discover-featured-placeholder">👜</span>
+                    )}
+                    {isAlreadyFeatured && <span className="discover-featured-badge">Destacado</span>}
+                  </div>
+                  <div className="discover-featured-card-info">
+                    <span className="discover-featured-card-name">{p.nombre}</span>
+                    <span className="discover-featured-card-price">${p.precio}</span>
+                    <button
+                      className="btn-sm"
+                      onClick={() => toggleFeatured(p)}
+                      disabled={!canSelect || savingProductId === p.id}
+                    >
+                      {savingProductId === p.id
+                        ? 'Guardando...'
+                        : isAlreadyFeatured
+                          ? 'Quitar'
+                          : 'Destacar'}
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+            {filteredProducts.length === 0 && (
+              <p className="discover-featured-empty">No se encontraron productos</p>
+            )}
+          </div>
+        </div>
+      </div>,
+      document.body
+    )
+    : null
+
   return (
     <section className="discover" id="discover">
       <h2 className="section-title">
@@ -218,115 +256,13 @@ export default function DiscoverSection() {
       {adminMode && (
         <div className="admin-inline-bar">
           <span>Productos destacados ({featuredProducts.length}/3)</span>
-          <button className="btn-sm" onClick={() => setShowSlotsModal(true)}>
+          <button className="btn-sm" onClick={() => { setShowFeaturedModal(true); setSearch('') }}>
             Editar destacados
           </button>
         </div>
       )}
 
-      {/* Featured Slots Modal */}
-      {showSlotsModal && (
-        <div className="modal-overlay" onClick={() => setShowSlotsModal(false)}>
-          <div className="featured-slots-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Productos Destacados</h3>
-              <button className="modal-close" onClick={() => setShowSlotsModal(false)}>✕</button>
-            </div>
-            <p className="modal-hint">Selecciona hasta 3 productos para mostrar en la página principal</p>
-            
-            <div className="slots-grid">
-              {slots.map((product, i) => (
-                <div key={i} className="slot-card">
-                  {product ? (
-                    <>
-                      <div className="slot-image">
-                        {product.imagenes?.[0] ? (
-                          <ImageWithLoader src={product.imagenes[0]} alt={product.nombre} />
-                        ) : (
-                          <span className="slot-placeholder">👜</span>
-                        )}
-                      </div>
-                      <div className="slot-info">
-                        <span className="slot-name">{product.nombre}</span>
-                        <span className="slot-price">${product.precio}</span>
-                      </div>
-                      <button
-                        className="slot-remove"
-                        onClick={() => removeFromSlot(i)}
-                        disabled={saving === i}
-                        title="Quitar producto"
-                      >
-                        {saving === i ? '...' : '✕'}
-                      </button>
-                    </>
-                  ) : (
-                    <button 
-                      className="slot-add"
-                      onClick={() => openProductPicker()}
-                      disabled={featuredProducts.length >= 3}
-                    >
-                      <span className="slot-add-icon">+</span>
-                      <span>Agregar producto</span>
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Product Picker Modal */}
-      {showProductPicker && (
-        <div className="modal-overlay" onClick={() => { setShowProductPicker(false) }}>
-          <div className="product-picker-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Seleccionar Producto</h3>
-              <button className="modal-close" onClick={() => { setShowProductPicker(false) }}>✕</button>
-            </div>
-            
-            <div className="picker-search">
-              <span className="search-icon">🔍</span>
-              <input
-                type="text"
-                placeholder="Buscar productos..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                autoFocus
-              />
-            </div>
-
-            <div className="picker-grid">
-              {filteredProducts.map((p) => {
-                const isAlreadyFeatured = featuredProducts.some((f) => f?.id === p.id)
-                return (
-                  <div
-                    key={p.id}
-                    className={`picker-card ${isAlreadyFeatured ? 'disabled' : ''}`}
-                    onClick={() => !isAlreadyFeatured && addToSlot(p)}
-                  >
-                    <div className="picker-card-image">
-                      {p.imagenes?.[0] ? (
-                        <ImageWithLoader src={p.imagenes[0]} alt={p.nombre} />
-                      ) : (
-                        <span className="picker-placeholder">👜</span>
-                      )}
-                      {isAlreadyFeatured && <span className="picker-badge">Ya destacado</span>}
-                    </div>
-                    <div className="picker-card-info">
-                      <span className="picker-card-name">{p.nombre}</span>
-                      <span className="picker-card-price">${p.precio}</span>
-                    </div>
-                  </div>
-                )
-              })}
-              {filteredProducts.length === 0 && (
-                <p className="picker-empty">No se encontraron productos</p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {featuredModal}
 
       {/* Product Cards Display */}
       {displayProducts.length > 0 && (
