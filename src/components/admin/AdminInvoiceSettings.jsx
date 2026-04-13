@@ -82,7 +82,6 @@ const FIELDSETS = [
       },
       { path: 'printer.providencia', label: 'Providencia', placeholder: 'Ej: SNAT/2026/00077' },
       { path: 'printer.fechaAsignacion', label: 'Fecha asignacion', placeholder: 'Formato sugerido: DDMMAAAA' },
-      { path: 'printer.serialFiscal', label: 'Serial fiscal', placeholder: 'Opcional' },
     ],
   },
 ]

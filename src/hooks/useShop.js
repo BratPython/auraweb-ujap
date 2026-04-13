@@ -58,9 +58,84 @@ function mapInvoiceRow(row) {
     items: row.items,
     totals: row.totals,
     payments: row.payments,
+    coupon: row.coupon,
     printer: row.printer,
     adminSettingsSnapshot: row.admin_settings_snapshot,
   }
+}
+
+function normalizeCartSnapshot(items = []) {
+  if (!Array.isArray(items)) return []
+
+  return items
+    .map((item, index) => {
+      const id = item?.id || null
+      if (!id) return null
+
+      return {
+        id,
+        code: item?.code || `P-${index + 1}`,
+        name: item?.name || item?.description || 'Producto',
+        image: String(item?.image || item?.imageUrl || item?.thumbnail || '').trim(),
+        price: Number(item?.price ?? item?.unitPrice) || 0,
+        stock: Math.max(0, Number(item?.stock) || 0),
+        exentoIva: !!item?.exentoIva || !!item?.exento,
+        discountPct: Math.max(0, Math.min(99, Number(item?.discountPct) || 0)),
+        quantity: Math.max(1, Number(item?.quantity) || 1),
+      }
+    })
+    .filter(Boolean)
+}
+
+function mapCheckoutSessionRow(row) {
+  if (!row) return null
+
+  return {
+    id: row.id,
+    userId: row.auth_user_id,
+    status: row.status,
+    cartSnapshot: normalizeCartSnapshot(row.cart_snapshot),
+    totalsSnapshot: row.totals_snapshot && typeof row.totals_snapshot === 'object' ? row.totals_snapshot : {},
+    couponSnapshot:
+      row.coupon_snapshot && typeof row.coupon_snapshot === 'object' ? row.coupon_snapshot : null,
+    currency: row.currency || 'USD',
+    paidTotal: roundMoney(row.paid_total),
+    remainingTotal: roundMoney(row.remaining_total),
+    invoiceId: row.invoice_id || null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    completedAt: row.completed_at || null,
+  }
+}
+
+function mapCheckoutPaymentRow(row) {
+  if (!row) return null
+
+  return {
+    id: row.id,
+    checkoutId: row.checkout_session_id,
+    userId: row.auth_user_id,
+    method: String(row.method || '').trim().toLowerCase(),
+    amount: roundMoney(row.amount),
+    status: String(row.status || '').trim().toLowerCase(),
+    reference: String(row.reference || '').trim(),
+    details: row.details && typeof row.details === 'object' ? row.details : null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+function mapPendingCheckoutSnapshotEntry(raw) {
+  if (!raw || typeof raw !== 'object') return null
+
+  const session = mapCheckoutSessionRow(raw.session)
+  if (!session) return null
+
+  const payments = Array.isArray(raw.payments)
+    ? raw.payments.map(mapCheckoutPaymentRow).filter(Boolean)
+    : []
+
+  return { session, payments }
 }
 
 function normalizeDocumentNumber(value) {
@@ -85,6 +160,74 @@ function normalizePaymentBreakdown(entries = []) {
       }
     })
     .filter((entry) => entry.amount > 0)
+}
+
+function normalizeCouponCode(value) {
+  return String(value || '').trim().toUpperCase()
+}
+
+function mapCouponPayload(raw) {
+  if (!raw || typeof raw !== 'object') return null
+
+  const code = normalizeCouponCode(raw.code)
+  const usageType = String(raw.usageType || raw.usage_type || '').trim().toLowerCase()
+  const discountPct = Math.max(0, Math.min(100, Number(raw.discountPct ?? raw.discount_pct) || 0))
+
+  if (!code || !usageType || discountPct <= 0) return null
+
+  return {
+    id: raw.id || null,
+    code,
+    discountPct,
+    usageType,
+    isActive: raw.isActive ?? raw.is_active ?? true,
+    used: raw.used ?? false,
+  }
+}
+
+function couponReasonMessage(reason) {
+  switch (String(reason || '').trim().toLowerCase()) {
+    case 'empty':
+      return 'Ingresa un codigo de cupon.'
+    case 'not_found':
+      return 'El cupon no existe.'
+    case 'inactive':
+      return 'Este cupon esta inactivo.'
+    case 'used':
+    case 'used_or_inactive':
+      return 'Este cupon ya fue utilizado o no esta disponible.'
+    default:
+      return 'No se pudo aplicar el cupon.'
+  }
+}
+
+function buildCheckoutTotalsSnapshot(cartItems, coupon = null) {
+  const rawTotals = calculateTotals(cartItems)
+  const selectedCoupon = mapCouponPayload(coupon)
+  const discountAmount = selectedCoupon
+    ? roundMoney(rawTotals.totalOperacion * (selectedCoupon.discountPct / 100))
+    : 0
+
+  const totalToPay = roundMoney(Math.max(0, rawTotals.totalOperacion - discountAmount))
+
+  const snapshot = {
+    ...rawTotals,
+    totalBeforeCoupon: roundMoney(rawTotals.totalOperacion),
+    discountAmount,
+    totalToPay,
+    totalOperacion: totalToPay,
+  }
+
+  if (selectedCoupon) {
+    snapshot.coupon = {
+      id: selectedCoupon.id,
+      code: selectedCoupon.code,
+      usageType: selectedCoupon.usageType,
+      discountPct: selectedCoupon.discountPct,
+    }
+  }
+
+  return snapshot
 }
 
 function buildAssignedRange(controlFiscal = {}) {
@@ -158,8 +301,12 @@ export function ShopProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [invoicesLoading, setInvoicesLoading] = useState(false)
+  const [pendingCheckoutLoading, setPendingCheckoutLoading] = useState(false)
   const [cartItems, setCartItems] = useState(() => readJson(SHOP_CART_KEY, []))
   const [invoices, setInvoices] = useState([])
+  const [pendingCheckoutList, setPendingCheckoutList] = useState([])
+  const [pendingCheckout, setPendingCheckout] = useState(null)
+  const [pendingCheckoutPayments, setPendingCheckoutPayments] = useState([])
 
   const persistSession = useCallback((user) => {
     setCurrentUser(user)
@@ -169,6 +316,64 @@ export function ShopProvider({ children }) {
     setCartItems(nextCart)
     writeJson(SHOP_CART_KEY, nextCart)
   }, [])
+
+  const clearPendingCheckoutState = useCallback(() => {
+    setPendingCheckoutList([])
+    setPendingCheckout(null)
+    setPendingCheckoutPayments([])
+  }, [])
+
+  const syncPendingCheckout = useCallback(async (options = {}) => {
+    const normalizedOptions =
+      options && typeof options === 'object'
+        ? options
+        : { forceUserId: options }
+
+    const { forceUserId = null, selectCheckoutId = null } = normalizedOptions
+    const effectiveUserId = forceUserId || currentUser?.id
+    if (!effectiveUserId) {
+      clearPendingCheckoutState()
+      return null
+    }
+
+    setPendingCheckoutLoading(true)
+    try {
+      const { data, error } = await supabase.rpc('list_pending_checkout_snapshots')
+      if (error) throw error
+
+      if (!data?.ok) {
+        clearPendingCheckoutState()
+        return null
+      }
+
+      const mappedItems = Array.isArray(data.items)
+        ? data.items.map(mapPendingCheckoutSnapshotEntry).filter(Boolean)
+        : []
+
+      const mappedSessions = mappedItems.map((entry) => entry.session)
+      setPendingCheckoutList(mappedSessions)
+
+      const preferredCheckoutId = selectCheckoutId || pendingCheckout?.id || null
+      const selectedEntry = (preferredCheckoutId
+        ? mappedItems.find((entry) => entry.session.id === preferredCheckoutId)
+        : null) || mappedItems[0] || null
+
+      setPendingCheckout(selectedEntry?.session || null)
+      setPendingCheckoutPayments(selectedEntry?.payments || [])
+
+      return {
+        items: mappedItems,
+        session: selectedEntry?.session || null,
+        payments: selectedEntry?.payments || [],
+      }
+    } catch (error) {
+      console.error('Error cargando checkout pendiente:', error)
+      clearPendingCheckoutState()
+      return null
+    } finally {
+      setPendingCheckoutLoading(false)
+    }
+  }, [clearPendingCheckoutState, currentUser?.id, pendingCheckout?.id])
 
   const syncProfileFromAuth = useCallback(async (authUser) => {
     if (!authUser?.id) return null
@@ -243,6 +448,180 @@ export function ShopProvider({ children }) {
     }
   }, [])
 
+  const ensurePendingCheckout = useCallback(async ({
+    coupon = undefined,
+    cartOverride = null,
+    checkoutId = null,
+    forceNew = false,
+  } = {}) => {
+    if (!currentUser?.id) {
+      return { ok: false, error: 'Debes iniciar sesion para continuar con el pago.' }
+    }
+
+    const targetSession = checkoutId
+      ? pendingCheckoutList.find((session) => session.id === checkoutId) || null
+      : pendingCheckout
+
+    const normalizedOverride = normalizeCartSnapshot(cartOverride)
+    const cartSource = normalizedOverride.length
+      ? normalizedOverride
+      : targetSession?.cartSnapshot?.length
+        ? normalizeCartSnapshot(targetSession.cartSnapshot)
+        : normalizeCartSnapshot(cartItems)
+
+    if (!cartSource.length) {
+      return { ok: false, error: 'No hay productos en el carrito para iniciar checkout.' }
+    }
+
+    const couponSource = coupon === undefined ? targetSession?.couponSnapshot : coupon
+    const selectedCoupon = mapCouponPayload(couponSource)
+    const totalsSnapshot = buildCheckoutTotalsSnapshot(cartSource, selectedCoupon)
+    const couponSnapshot = selectedCoupon
+
+    try {
+      const shouldCreate = forceNew || !targetSession?.id
+
+      if (!shouldCreate && checkoutId && targetSession?.id !== checkoutId) {
+        return { ok: false, error: 'La cuenta por pagar seleccionada no existe o ya no esta disponible.' }
+      }
+
+      if (shouldCreate) {
+        const { data, error } = await supabase.rpc('create_checkout_session', {
+          cart_snapshot: cartSource,
+          totals_snapshot: totalsSnapshot,
+          coupon_snapshot: couponSnapshot,
+          currency: 'USD',
+        })
+
+        if (error) throw error
+        if (!data?.ok || !data?.session) {
+          return { ok: false, error: 'No se pudo crear la cuenta por pagar.' }
+        }
+
+        const mappedSession = mapCheckoutSessionRow(data.session)
+        if (!mappedSession) {
+          return { ok: false, error: 'La cuenta por pagar no devolvio datos validos.' }
+        }
+
+        await syncPendingCheckout({ forceUserId: currentUser.id, selectCheckoutId: mappedSession.id })
+        return { ok: true, session: mappedSession }
+      }
+
+      const { data, error } = await supabase.rpc('update_pending_checkout_session', {
+        checkout_id: targetSession.id,
+        cart_snapshot: cartSource,
+        totals_snapshot: totalsSnapshot,
+        coupon_snapshot: couponSnapshot,
+        currency: 'USD',
+      })
+
+      if (error) throw error
+
+      if (!data?.ok) {
+        if (data?.reason === 'has_paid_payments') {
+          return { ok: false, error: 'Esta cuenta por pagar ya tiene pagos y no puede editarse.' }
+        }
+        if (data?.reason === 'not_found') {
+          return { ok: false, error: 'La cuenta por pagar seleccionada ya no esta disponible.' }
+        }
+        return { ok: false, error: 'No se pudo actualizar la cuenta por pagar.' }
+      }
+
+      const mappedSession = mapCheckoutSessionRow(data.session)
+      if (!mappedSession) {
+        return { ok: false, error: 'No se pudo procesar la cuenta por pagar actualizada.' }
+      }
+
+      await syncPendingCheckout({ forceUserId: currentUser.id, selectCheckoutId: mappedSession.id })
+      return { ok: true, session: mappedSession }
+    } catch (checkoutError) {
+      console.error('Error creando/reanudando checkout pendiente:', checkoutError)
+      return {
+        ok: false,
+        error: checkoutError?.message || 'No se pudo crear/actualizar la cuenta por pagar.',
+      }
+    }
+  }, [cartItems, currentUser?.id, pendingCheckout, pendingCheckoutList, syncPendingCheckout])
+
+  const recordCheckoutPayment = useCallback(async ({
+    checkoutId,
+    method,
+    amount,
+    reference = '',
+    details = null,
+    status = 'paid',
+  }) => {
+    if (!currentUser?.id) {
+      return { ok: false, error: 'Debes iniciar sesion para registrar pagos.' }
+    }
+
+    if (!checkoutId) {
+      return { ok: false, error: 'No hay checkout pendiente activo.' }
+    }
+
+    const safeAmount = roundMoney(amount)
+    if (safeAmount <= 0) {
+      return { ok: false, error: 'El monto a registrar debe ser mayor a cero.' }
+    }
+
+    try {
+      const { data, error } = await supabase.rpc('record_checkout_payment', {
+        checkout_id: checkoutId,
+        payment_method: method,
+        payment_amount: safeAmount,
+        payment_reference: String(reference || '').trim() || null,
+        payment_details: details && typeof details === 'object' ? details : {},
+        payment_status: status,
+      })
+
+      if (error) throw error
+
+  await syncPendingCheckout({ forceUserId: currentUser.id, selectCheckoutId: checkoutId })
+      return { ok: true, result: data }
+    } catch (paymentError) {
+      console.error('Error registrando pago de checkout:', paymentError)
+      return {
+        ok: false,
+        error: paymentError?.message || 'No se pudo registrar el pago en la base de datos.',
+      }
+    }
+  }, [currentUser?.id, syncPendingCheckout])
+
+  const completeCheckoutSession = useCallback(async ({ checkoutId, invoiceId }) => {
+    if (!currentUser?.id) {
+      return { ok: false, error: 'Debes iniciar sesion para completar el checkout.' }
+    }
+
+    if (!checkoutId) {
+      return { ok: false, error: 'No hay checkout pendiente para finalizar.' }
+    }
+
+    try {
+      const { data, error } = await supabase.rpc('complete_checkout_session', {
+        checkout_id: checkoutId,
+        invoice_id: invoiceId || null,
+      })
+
+      if (error) throw error
+
+      if (!data?.ok) {
+        return {
+          ok: false,
+          error: 'El checkout aun no esta completamente pagado para emitir factura.',
+        }
+      }
+
+      await syncPendingCheckout({ forceUserId: currentUser.id })
+      return { ok: true, result: data }
+    } catch (checkoutError) {
+      console.error('Error completando checkout pendiente:', checkoutError)
+      return {
+        ok: false,
+        error: checkoutError?.message || 'No se pudo completar el checkout pendiente.',
+      }
+    }
+  }, [currentUser?.id, syncPendingCheckout])
+
   useEffect(() => {
     let active = true
 
@@ -254,6 +633,7 @@ export function ShopProvider({ children }) {
       if (!authUser) {
         setInvoices([])
         persistSession(null)
+        clearPendingCheckoutState()
         setAuthLoading(false)
         return
       }
@@ -262,8 +642,10 @@ export function ShopProvider({ children }) {
       try {
         await syncProfileFromAuth(authUser)
         await loadInvoicesForUser(authUser.id)
+        await syncPendingCheckout(authUser.id)
       } catch (error) {
         console.error('Error sincronizando sesion de cliente:', error)
+        if (active) clearPendingCheckoutState()
       } finally {
         if (active) setAuthLoading(false)
       }
@@ -281,16 +663,19 @@ export function ShopProvider({ children }) {
         if (!authUser) {
           setInvoices([])
           persistSession(null)
+          clearPendingCheckoutState()
           return
         }
 
         await syncProfileFromAuth(authUser)
         await loadInvoicesForUser(authUser.id)
+        await syncPendingCheckout(authUser.id)
       } catch (error) {
         console.error('Error iniciando sesion de cliente:', error)
         if (active) {
           setInvoices([])
           persistSession(null)
+          clearPendingCheckoutState()
         }
       } finally {
         if (active) setAuthLoading(false)
@@ -310,7 +695,7 @@ export function ShopProvider({ children }) {
       active = false
       listener.subscription.unsubscribe()
     }
-  }, [loadInvoicesForUser, persistSession, syncProfileFromAuth])
+  }, [clearPendingCheckoutState, loadInvoicesForUser, persistSession, syncPendingCheckout, syncProfileFromAuth])
 
   async function registerUser(payload) {
     const email = String(payload.email || '').trim().toLowerCase()
@@ -372,6 +757,7 @@ export function ShopProvider({ children }) {
 
       const mapped = await syncProfileFromAuth(data.user)
       await loadInvoicesForUser(data.user.id)
+      await syncPendingCheckout(data.user.id)
       return { ok: true, user: mapped }
     } catch (profileError) {
       console.error('Error guardando perfil del cliente:', profileError)
@@ -393,14 +779,50 @@ export function ShopProvider({ children }) {
 
     const mapped = await syncProfileFromAuth(data.user)
     await loadInvoicesForUser(data.user.id)
+    await syncPendingCheckout(data.user.id)
     return { ok: true, user: mapped }
   }
 
   async function logoutUser() {
     await supabase.auth.signOut()
     setInvoices([])
+    clearPendingCheckoutState()
+    persistCart([])
     persistSession(null)
   }
+
+  async function inspectCoupon(couponCode) {
+    if (!currentUser?.id) {
+      return { ok: false, error: 'Debes iniciar sesion para usar cupones.' }
+    }
+
+    const normalizedCode = normalizeCouponCode(couponCode)
+    if (!normalizedCode) {
+      return { ok: false, error: 'Ingresa un codigo de cupon.' }
+    }
+
+    const { data, error } = await supabase.rpc('inspect_coupon_for_checkout', {
+      coupon_code: normalizedCode,
+    })
+
+    if (error) {
+      console.error('Error validando cupon:', error)
+      return { ok: false, error: 'No se pudo validar el cupon en este momento.' }
+    }
+
+    if (!data?.ok) {
+      return { ok: false, error: couponReasonMessage(data?.reason) }
+    }
+
+    const coupon = mapCouponPayload(data?.coupon)
+    if (!coupon) {
+      return { ok: false, error: 'El cupon no tiene una configuracion valida.' }
+    }
+
+    return { ok: true, coupon }
+  }
+
+  const hasPendingCheckout = pendingCheckoutList.length > 0
 
   function addToCart(product, quantity = 1) {
     const stock = Number(product.stock) || 0
@@ -421,6 +843,7 @@ export function ShopProvider({ children }) {
       id: product.id,
       code: product.code,
       name: product.name,
+      image: String(product.image || existing?.image || '').trim(),
       price: Number(product.price) || 0,
       stock,
       exentoIva: !!product.exentoIva,
@@ -444,36 +867,155 @@ export function ShopProvider({ children }) {
       return { ...item, quantity: safeQty }
     })
     persistCart(nextCart)
+    return { ok: true }
   }
 
   function removeFromCart(productId) {
     const nextCart = cartItems.filter((item) => item.id !== productId)
     persistCart(nextCart)
+    return { ok: true }
   }
 
   function clearCart() {
     persistCart([])
+    return { ok: true }
   }
 
-  const getCartTotals = useCallback(() => {
+  const getCartTotals = useCallback((items = null) => {
+    if (Array.isArray(items)) {
+      return calculateTotals(items)
+    }
     return calculateTotals(cartItems)
   }, [cartItems])
 
-  async function buildInvoice({ paymentBreakdown = [] } = {}) {
+  async function selectPendingCheckout(checkoutId) {
+    if (!currentUser?.id) {
+      return { ok: false, error: 'Debes iniciar sesion para gestionar cuentas por pagar.' }
+    }
+
+    const targetId = String(checkoutId || '').trim()
+    if (!targetId) {
+      const synced = await syncPendingCheckout({ forceUserId: currentUser.id })
+      return { ok: true, session: synced?.session || null, payments: synced?.payments || [] }
+    }
+
+    const synced = await syncPendingCheckout({
+      forceUserId: currentUser.id,
+      selectCheckoutId: targetId,
+    })
+
+    if (!synced?.session || synced.session.id !== targetId) {
+      return { ok: false, error: 'La cuenta por pagar seleccionada no esta disponible.' }
+    }
+
+    return { ok: true, session: synced.session, payments: synced.payments || [] }
+  }
+
+  async function buildInvoice({
+    paymentBreakdown = [],
+    coupon = null,
+    checkoutSessionId = null,
+    checkoutSnapshot = null,
+    cartData = null,
+  } = {}) {
     if (!currentUser) {
       return { ok: false, error: 'Debes iniciar sesión para facturar.' }
     }
 
-    if (!cartItems.length) {
+    let activeCheckoutId = checkoutSessionId || null
+    let resolvedCheckout = null
+
+    if (activeCheckoutId) {
+      try {
+        const { data, error } = await supabase.rpc('get_checkout_snapshot', {
+          checkout_id: activeCheckoutId,
+        })
+
+        if (error) throw error
+
+        if (!data?.ok || !data?.session) {
+          return { ok: false, error: 'La cuenta por pagar seleccionada no esta disponible.' }
+        }
+
+        resolvedCheckout = {
+          session: mapCheckoutSessionRow(data.session),
+          payments: Array.isArray(data.payments)
+            ? data.payments.map(mapCheckoutPaymentRow).filter(Boolean)
+            : [],
+        }
+      } catch (snapshotError) {
+        console.error('Error consultando cuenta por pagar:', snapshotError)
+        return {
+          ok: false,
+          error: snapshotError?.message || 'No se pudo cargar la cuenta por pagar seleccionada.',
+        }
+      }
+    }
+
+    const sessionCart = normalizeCartSnapshot(resolvedCheckout?.session?.cartSnapshot)
+    const snapshotCart = normalizeCartSnapshot(checkoutSnapshot?.items)
+    const providedCart = normalizeCartSnapshot(cartData)
+    const sourceCart = sessionCart.length
+      ? sessionCart
+      : snapshotCart.length
+      ? snapshotCart
+      : providedCart.length
+        ? providedCart
+        : normalizeCartSnapshot(cartItems)
+
+    if (!sourceCart.length) {
       return { ok: false, error: 'No hay productos en el carrito.' }
     }
 
-    const totals = calculateTotals(cartItems)
-    const normalizedPayments = normalizePaymentBreakdown(paymentBreakdown)
+    const selectedCoupon = mapCouponPayload(
+      coupon ?? resolvedCheckout?.session?.couponSnapshot ?? checkoutSnapshot?.coupon ?? pendingCheckout?.couponSnapshot
+    )
+    const rawTotals = calculateTotals(sourceCart)
+    const discountAmount = selectedCoupon
+      ? roundMoney(rawTotals.totalOperacion * (selectedCoupon.discountPct / 100))
+      : 0
+
+    const totals = {
+      ...rawTotals,
+      totalBeforeCoupon: roundMoney(rawTotals.totalOperacion),
+      discountAmount,
+      totalOperacion: roundMoney(Math.max(0, rawTotals.totalOperacion - discountAmount)),
+    }
+
+    if (selectedCoupon) {
+      totals.coupon = {
+        id: selectedCoupon.id || null,
+        code: selectedCoupon.code,
+        usageType: selectedCoupon.usageType,
+        discountPct: selectedCoupon.discountPct,
+      }
+    }
+
+    if (!activeCheckoutId) {
+      const checkoutSeed = await ensurePendingCheckout({
+        coupon: selectedCoupon,
+        cartOverride: sourceCart,
+        forceNew: true,
+      })
+
+      if (!checkoutSeed.ok) {
+        return { ok: false, error: checkoutSeed.error || 'No se pudo crear la cuenta por pagar.' }
+      }
+
+      activeCheckoutId = checkoutSeed.session?.id || null
+    }
+
+    const fallbackPayments = resolvedCheckout?.payments || (Array.isArray(checkoutSnapshot?.payments)
+      ? checkoutSnapshot.payments
+      : pendingCheckoutPayments)
+
+    const normalizedPayments = normalizePaymentBreakdown(
+      paymentBreakdown.length ? paymentBreakdown : fallbackPayments
+    )
     const expectedTotal = roundMoney(totals.totalOperacion)
     const paidTotal = roundMoney(normalizedPayments.reduce((acc, payment) => acc + payment.amount, 0))
 
-    if (!normalizedPayments.length) {
+    if (!normalizedPayments.length && expectedTotal > 0) {
       return { ok: false, error: 'Debes registrar al menos un pago antes de facturar.' }
     }
 
@@ -484,8 +1026,30 @@ export function ShopProvider({ children }) {
       }
     }
 
+    let claimedCoupon = null
+
+    if (selectedCoupon) {
+      const { data: claimData, error: claimError } = await supabase.rpc('claim_coupon_for_checkout', {
+        coupon_code: selectedCoupon.code,
+      })
+
+      if (claimError) {
+        console.error('Error reclamando cupon:', claimError)
+        return { ok: false, error: 'No se pudo reservar el cupon para esta compra.' }
+      }
+
+      if (!claimData?.ok) {
+        return { ok: false, error: couponReasonMessage(claimData?.reason) }
+      }
+
+      claimedCoupon = mapCouponPayload(claimData?.coupon)
+      if (!claimedCoupon) {
+        return { ok: false, error: 'El cupon no tiene una configuracion valida.' }
+      }
+    }
+
     try {
-      const ids = cartItems.map((i) => i.id)
+      const ids = sourceCart.map((i) => i.id)
       const { data: stockRows, error: stockError } = await supabase
         .from('productos')
         .select('id, stock, agotado, is_active')
@@ -495,7 +1059,7 @@ export function ShopProvider({ children }) {
 
       const stockMap = new Map((stockRows || []).map((row) => [row.id, row]))
 
-      for (const item of cartItems) {
+      for (const item of sourceCart) {
         const row = stockMap.get(item.id)
         if (!row || row.is_active === false) {
           return { ok: false, error: `Producto no disponible: ${item.name}` }
@@ -507,7 +1071,7 @@ export function ShopProvider({ children }) {
         }
       }
 
-      for (const item of cartItems) {
+      for (const item of sourceCart) {
         const row = stockMap.get(item.id)
         const dbStock = Math.max(0, Number(row.stock) || 0)
         const nextStock = Math.max(0, dbStock - item.quantity)
@@ -524,6 +1088,11 @@ export function ShopProvider({ children }) {
       }
     } catch (error) {
       console.error('Error descontando stock:', error)
+
+      if (claimedCoupon?.usageType === 'single_use' && claimedCoupon?.id) {
+        await supabase.rpc('release_claimed_coupon', { coupon_id: claimedCoupon.id })
+      }
+
       return { ok: false, error: 'No se pudo confirmar la compra por un problema de stock.' }
     }
 
@@ -572,6 +1141,15 @@ export function ShopProvider({ children }) {
         status: 'paid',
         paidAt: now.toISOString(),
       },
+      coupon: claimedCoupon
+        ? {
+            id: claimedCoupon.id,
+            code: claimedCoupon.code,
+            usageType: claimedCoupon.usageType,
+            discountPct: claimedCoupon.discountPct,
+            discountAmount,
+          }
+        : null,
       printer: {
         razonSocial: invoiceSettings.printer.razonSocial,
         rif: invoiceSettings.printer.rif,
@@ -598,6 +1176,7 @@ export function ShopProvider({ children }) {
         totals: invoice.totals,
         items: invoice.items,
         payments: invoice.payments,
+        coupon: invoice.coupon,
         admin_settings_snapshot: invoice.adminSettingsSnapshot,
       })
       .select('*')
@@ -605,13 +1184,60 @@ export function ShopProvider({ children }) {
 
     if (invoiceInsertError) {
       console.error('Error guardando factura en Supabase:', invoiceInsertError)
+
+      if (claimedCoupon?.usageType === 'single_use' && claimedCoupon?.id) {
+        await supabase.rpc('release_claimed_coupon', { coupon_id: claimedCoupon.id })
+      }
+
       return { ok: false, error: 'No se pudo guardar la factura en la base de datos.' }
     }
 
     const persistedInvoice = mapInvoiceRow(insertedInvoice)
+
+    if (activeCheckoutId) {
+      const completion = await completeCheckoutSession({
+        checkoutId: activeCheckoutId,
+        invoiceId: persistedInvoice.id,
+      })
+
+      if (!completion.ok) {
+        console.error('No se pudo completar la sesion de checkout:', completion.error)
+
+        const { error: rollbackError } = await supabase
+          .from('shop_invoices')
+          .delete()
+          .eq('id', persistedInvoice.id)
+          .eq('auth_user_id', currentUser.id)
+
+        if (rollbackError) {
+          console.error('No se pudo revertir la factura tras fallo de checkout:', rollbackError)
+        }
+
+        if (claimedCoupon?.usageType === 'single_use' && claimedCoupon?.id) {
+          await supabase.rpc('release_claimed_coupon', { coupon_id: claimedCoupon.id })
+        }
+
+        return {
+          ok: false,
+          error: completion.error || 'El checkout pendiente no pudo cerrarse correctamente.',
+        }
+      }
+    }
+
+    if (claimedCoupon?.usageType === 'single_use' && claimedCoupon?.id) {
+      const { error: attachCouponError } = await supabase.rpc('attach_coupon_to_invoice', {
+        coupon_id: claimedCoupon.id,
+        invoice_id: persistedInvoice.id,
+      })
+
+      if (attachCouponError) {
+        console.error('No se pudo enlazar el cupon con la factura:', attachCouponError)
+      }
+    }
+
     setInvoices((prev) => [persistedInvoice, ...prev])
 
-    clearCart()
+    await syncPendingCheckout({ forceUserId: currentUser.id })
     return { ok: true, invoice: persistedInvoice }
   }
 
@@ -659,8 +1285,13 @@ export function ShopProvider({ children }) {
     currentUser,
     authLoading,
     invoicesLoading,
+    pendingCheckoutLoading,
     cartItems,
     subtotal,
+    pendingCheckoutList,
+    pendingCheckout,
+    pendingCheckoutPayments,
+    hasPendingCheckout,
     registerUser,
     loginUser,
     logoutUser,
@@ -669,6 +1300,12 @@ export function ShopProvider({ children }) {
     removeFromCart,
     clearCart,
     buildInvoice,
+    inspectCoupon,
+    syncPendingCheckout,
+    ensurePendingCheckout,
+    selectPendingCheckout,
+    recordCheckoutPayment,
+    completeCheckoutSession,
     getCartTotals,
     getUserInvoices,
     getInvoiceById,

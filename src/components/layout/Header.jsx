@@ -5,20 +5,24 @@ import { INSTAGRAM_URL } from '../../config/constants'
 import { supabase } from '../../supabaseClient'
 import { useAdminMode } from '../../hooks/useAdminMode'
 import { useShop } from '../../hooks/useShop'
+import CartSideDrawer from '../shop/CartSideDrawer'
 
 export default function Header({ children, currentPage }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [cartOpen, setCartOpen] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   const navigate = useNavigate()
   const { isAdmin, adminMode, setAdminMode } = useAdminMode()
-  const { currentUser, logoutUser } = useShop()
+  const { currentUser, cartItems, logoutUser } = useShop()
+
+  const cartCount = cartItems.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0)
 
   const navLinks = [
     { label: 'Inicio', path: '/', id: 'home' },
     { label: 'Catálogo', path: '/catalogo', id: 'catalog' },
     ...(currentUser
       ? [
-          { label: 'Carrito', path: '/facturas/carrito', id: 'facturas-cart' },
+          { label: 'Por pagar', path: '/facturas/carrito', id: 'facturas-cart' },
           { label: 'Pedidos', path: '/facturas/mis-facturas', id: 'facturas-orders' },
         ]
       : [{ label: 'Iniciar sesión', path: '/facturas/auth', id: 'facturas-auth' }]),
@@ -59,6 +63,8 @@ export default function Header({ children, currentPage }) {
             <button type="button" onClick={() => navigate('/admin/temas')}>Temas</button>
             <button type="button" onClick={() => navigate('/admin/usuarios')}>Usuarios</button>
             <button type="button" onClick={() => navigate('/admin/factura')}>Factura</button>
+            <button type="button" onClick={() => navigate('/admin/pedidos')}>Pedidos</button>
+            <button type="button" onClick={() => navigate('/admin/cupones')}>Cupones</button>
             <button type="button" className="danger" onClick={handleAdminLogout} disabled={loggingOut}>
               {loggingOut ? 'Saliendo...' : 'Salir'}
             </button>
@@ -102,6 +108,19 @@ export default function Header({ children, currentPage }) {
           ) : null}
 
           {children}
+
+          {currentUser ? (
+            <button
+              type="button"
+              className="session-cart-btn"
+              onClick={() => setCartOpen(true)}
+              aria-label="Abrir carrito"
+              title="Abrir carrito"
+            >
+              <span>Carrito</span>
+              <strong>{cartCount}</strong>
+            </button>
+          ) : null}
 
           {currentUser ? (
             <button
@@ -152,6 +171,8 @@ export default function Header({ children, currentPage }) {
           )}
         </nav>
       </header>
+
+      <CartSideDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
     </>
   )
 }

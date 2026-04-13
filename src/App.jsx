@@ -8,6 +8,8 @@ import LoginAdmin from './components/admin/LoginAdmin'
 import AdminProtectedRoute from './components/admin/AdminProtectedRoute'
 import AdminUsers from './components/admin/AdminUsers'
 import AdminInvoiceSettings from './components/admin/AdminInvoiceSettings'
+import AdminOrders from './components/admin/AdminOrders'
+import AdminCoupons from './components/admin/AdminCoupons'
 import LoadingSpinner from './components/ui/LoadingSpinner'
 import { AdminProvider } from './hooks/useAdminMode'
 import { useTheme } from './hooks/useTheme'
@@ -50,6 +52,14 @@ function AppRoutes() {
         <Route
           path="/admin/factura"
           element={<AdminInvoiceSettings activeMode={activeMode} onModeChange={setActiveMode} />}
+        />
+        <Route
+          path="/admin/pedidos"
+          element={<AdminOrders activeMode={activeMode} onModeChange={setActiveMode} />}
+        />
+        <Route
+          path="/admin/cupones"
+          element={<AdminCoupons activeMode={activeMode} onModeChange={setActiveMode} />}
         />
       </Route>
 

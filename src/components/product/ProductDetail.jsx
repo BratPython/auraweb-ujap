@@ -199,6 +199,7 @@ export default function ProductDetail({ activeMode, onModeChange }) {
       id: product.id,
       code: `PRD-${String(product.id).slice(0, 8)}`,
       name: product.nombre,
+      image: Array.isArray(product.imagenes) ? String(product.imagenes[0] || '') : '',
       price: finalPrice,
       stock,
       exentoIva: false,

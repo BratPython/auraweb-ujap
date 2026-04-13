@@ -14,6 +14,7 @@ export default function FiscalInvoiceDetail({ invoice, showPrint = true, onBack,
   const nomenclaturaFactura = invoice?.printer?.nomenclaturaFactura || invoice?.printer?.nomenclatura || '-'
   const nomenclaturaControl = invoice?.printer?.nomenclaturaControl || invoice?.printer?.nomenclatura || '-'
   const paymentMethods = invoice?.payments?.methods || []
+  const coupon = invoice?.coupon || invoice?.totals?.coupon || null
 
   return (
     <div className="shop-card invoice-card" id="invoice-print-area">
@@ -104,6 +105,12 @@ export default function FiscalInvoiceDetail({ invoice, showPrint = true, onBack,
             <span>Monto IVA ({Math.round(invoice.totals.ivaRate * 100)}%)</span>
             <strong>{formatCurrency(invoice.totals.montoIva)}</strong>
           </div>
+          {coupon ? (
+            <div className="invoice-total-row">
+              <span>Cupon {coupon.code} ({Number(coupon.discountPct || 0).toFixed(2)}%)</span>
+              <strong>-{formatCurrency(invoice.totals.discountAmount || coupon.discountAmount || 0)}</strong>
+            </div>
+          ) : null}
           <div className="invoice-total-row invoice-total-row-final">
             <span>Valor Total de la Operacion</span>
             <strong>{formatCurrency(invoice.totals.totalOperacion)}</strong>

@@ -587,6 +587,137 @@
   cursor: pointer;
 }
 
+.admin-orders-card-wide {
+  grid-column: 1 / -1;
+}
+
+.admin-orders-toolbar {
+  display: flex;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.admin-orders-toolbar input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, .15);
+  background: var(--bg);
+  color: var(--color-body);
+}
+
+.admin-orders-toolbar button {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--btn-hover);
+  color: var(--color-btn-hover);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-orders-table {
+  min-width: 980px;
+}
+
+.admin-order-user-cell {
+  display: grid;
+  gap: 2px;
+}
+
+.admin-order-user-cell span {
+  font-size: 12px;
+  opacity: .82;
+}
+
+.admin-orders-view-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--btn-hover);
+  color: var(--color-btn-hover);
+  cursor: pointer;
+}
+
+.admin-order-detail-panel {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(0, 0, 0, .12);
+}
+
+.admin-order-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.admin-order-detail-head h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.admin-order-detail-head button {
+  border: none;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-weight: 700;
+  background: rgba(0, 0, 0, .08);
+  color: var(--color-body);
+  cursor: pointer;
+}
+
+.admin-coupon-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-coupon-form input,
+.admin-coupon-form select {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, .15);
+  background: var(--bg);
+  color: var(--color-body);
+}
+
+.admin-coupon-form button {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-weight: 700;
+  background: var(--btn-hover);
+  color: var(--color-btn-hover);
+  cursor: pointer;
+}
+
+.admin-coupon-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.admin-coupons-table {
+  min-width: 760px;
+}
+
+.admin-coupon-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.admin-coupon-used-note {
+  font-size: 12px;
+  opacity: .8;
+}
+
 .admin-invoice-card-wide {
   grid-column: 1 / 2;
 }

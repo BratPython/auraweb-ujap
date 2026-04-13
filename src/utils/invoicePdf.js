@@ -109,6 +109,17 @@ export function downloadInvoicePdf(invoice) {
   next()
   lineValue(doc, 'Monto IVA', fmtMoney(invoice?.totals?.montoIva), y)
   next()
+  const coupon = invoice?.coupon || invoice?.totals?.coupon
+  if (coupon) {
+    lineValue(
+      doc,
+      `Cupon ${coupon.code || '-'}`,
+      `-${fmtMoney(invoice?.totals?.discountAmount || coupon.discountAmount || 0)}`,
+      y
+    )
+    next()
+  }
+
   lineValue(doc, 'Total Operacion', fmtMoney(invoice?.totals?.totalOperacion), y)
 
   next(20)
