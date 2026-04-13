@@ -113,20 +113,26 @@ export default function Catalog({ activeMode, onModeChange }) {
             <SkeletonCard count={6} />
           </div>
         ) : (
-          <div className="catalog-grid">
-            <ProductGrid
-              products={filteredProducts}
-              onDelete={deleteProduct}
-              canDelete={adminMode}
-            />
+          filteredProducts.length ? (
+            <div className="catalog-grid">
+              <ProductGrid
+                products={filteredProducts}
+                onDelete={deleteProduct}
+                canDelete={adminMode}
+              />
 
-            {adminMode ? (
-              <div className="product-card-admin add-new-card" onClick={() => setShowModal(true)}>
-                <div className="add-icon">+</div>
-                <span>Añadir Nuevo</span>
-              </div>
-            ) : null}
-          </div>
+              {adminMode ? (
+                <div className="product-card-admin add-new-card" onClick={() => setShowModal(true)}>
+                  <div className="add-icon">+</div>
+                  <span>Añadir Nuevo</span>
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <div className="shop-card" style={{ marginTop: 8 }}>
+              <p>No hay productos disponibles para esta categoria por ahora.</p>
+            </div>
+          )
         )}
       </div>
 

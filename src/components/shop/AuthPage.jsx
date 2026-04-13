@@ -7,9 +7,11 @@ const DOC_TYPES = ['V', 'E', 'J', 'G', 'P']
 
 export default function AuthPage() {
   const navigate = useNavigate()
-  const { registerUser, loginUser, currentUser, logoutUser } = useShop()
+  const { registerUser, loginUser, currentUser, logoutUser, authLoading } = useShop()
   const [mode, setMode] = useState('login')
   const [error, setError] = useState('')
+  const [status, setStatus] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   const [loginForm, setLoginForm] = useState({ email: '', password: '' })
   const [registerForm, setRegisterForm] = useState({
@@ -22,24 +24,34 @@ export default function AuthPage() {
     password: '',
   })
 
-  function onLoginSubmit(e) {
+  async function onLoginSubmit(e) {
     e.preventDefault()
     setError('')
-    const result = loginUser(loginForm)
+    setStatus('')
+    setSubmitting(true)
+    const result = await loginUser(loginForm)
+    setSubmitting(false)
     if (!result.ok) setError(result.error)
   }
 
-  function onRegisterSubmit(e) {
+  async function onRegisterSubmit(e) {
     e.preventDefault()
     setError('')
+    setStatus('')
 
     if (!registerForm.legalName || !registerForm.docNumber || !registerForm.fiscalAddress) {
       setError('Completa todos los datos fiscales obligatorios.')
       return
     }
 
-    const result = registerUser(registerForm)
+    setSubmitting(true)
+    const result = await registerUser(registerForm)
+    setSubmitting(false)
     if (!result.ok) setError(result.error)
+    if (result.pendingVerification) {
+      setStatus(result.message || 'Cuenta creada. Verifica tu correo para activar el acceso.')
+      setMode('login')
+    }
   }
 
   return (
@@ -49,6 +61,8 @@ export default function AuthPage() {
         <div className="shop-card">
           <h2>Autenticacion de Cliente</h2>
 
+        {authLoading ? <p className="shop-note">Verificando sesion...</p> : null}
+
         {currentUser ? (
           <div className="shop-auth-state">
             <p>
@@ -56,7 +70,7 @@ export default function AuthPage() {
             </p>
             <div className="shop-actions">
               <button className="btn" onClick={() => navigate('/facturas/mis-facturas')}>Mis facturas</button>
-              <button className="btn" onClick={logoutUser}>Cerrar sesion</button>
+              <button className="btn" onClick={() => logoutUser()}>Cerrar sesion</button>
             </div>
           </div>
         ) : (
@@ -71,6 +85,7 @@ export default function AuthPage() {
             </div>
 
             {error ? <p className="shop-error">{error}</p> : null}
+            {status ? <p className="shop-note">{status}</p> : null}
 
             {mode === 'login' ? (
               <form className="shop-form" onSubmit={onLoginSubmit}>
@@ -92,7 +107,9 @@ export default function AuthPage() {
                     required
                   />
                 </label>
-                <button type="submit" className="btn btn-primary">Entrar</button>
+                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                  {submitting ? 'Ingresando...' : 'Entrar'}
+                </button>
               </form>
             ) : (
               <form className="shop-form" onSubmit={onRegisterSubmit}>
@@ -162,7 +179,9 @@ export default function AuthPage() {
                     required
                   />
                 </label>
-                <button type="submit" className="btn btn-primary">Crear cuenta fiscal</button>
+                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                  {submitting ? 'Creando cuenta...' : 'Crear cuenta fiscal'}
+                </button>
               </form>
             )}
           </>

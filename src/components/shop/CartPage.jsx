@@ -9,25 +9,25 @@ export default function CartPage() {
     currentUser,
     cartItems,
     subtotal,
-    addToCart,
     updateCartQuantity,
     removeFromCart,
-    buildInvoice,
   } = useShop()
 
   const [message, setMessage] = useState('')
 
   const formattedSubtotal = useMemo(() => subtotal.toFixed(2), [subtotal])
 
-  async function handleCheckout() {
-    const result = await buildInvoice()
-    if (!result.ok) {
-      setMessage(result.error)
+  function handleCheckout() {
+    setMessage('')
+    if (!currentUser) {
+      setMessage('Debes iniciar sesion para proceder al pago.')
       return
     }
-
-    sessionStorage.setItem('aura:lastInvoice', JSON.stringify(result.invoice))
-    navigate('/facturas/factura')
+    if (!cartItems.length) {
+      setMessage('No hay productos en el carrito.')
+      return
+    }
+    navigate('/facturas/pago')
   }
 
   return (
@@ -73,7 +73,7 @@ export default function CartPage() {
               Seguir comprando
             </button>
             <button className="btn btn-primary" onClick={handleCheckout}>
-              Pagar
+              Proceder al pago
             </button>
           </div>
         </div>

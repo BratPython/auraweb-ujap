@@ -58,6 +58,7 @@ export default function Header({ children, currentPage }) {
           <div className="admin-quickbar-actions">
             <button type="button" onClick={() => navigate('/admin/temas')}>Temas</button>
             <button type="button" onClick={() => navigate('/admin/usuarios')}>Usuarios</button>
+            <button type="button" onClick={() => navigate('/admin/factura')}>Factura</button>
             <button type="button" className="danger" onClick={handleAdminLogout} disabled={loggingOut}>
               {loggingOut ? 'Saliendo...' : 'Salir'}
             </button>

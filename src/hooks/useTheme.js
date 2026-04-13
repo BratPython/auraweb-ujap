@@ -77,9 +77,11 @@ function pickBlackOrWhiteByContrast(bgColor) {
 }
 
 export function useTheme() {
-  const [themeSettings, setThemeSettings] = useState(null)
+  const initialTheme = readCachedThemeSettings() || FALLBACK_STATE
+  const [themeSettings, setThemeSettings] = useState(initialTheme)
   const [activeMode, setActiveMode] = useState('light')
-  const lastLoadedRef = useRef('')
+  const [hasHydratedTheme, setHasHydratedTheme] = useState(false)
+  const lastLoadedRef = useRef(JSON.stringify(initialTheme))
 
   // Fetch theme from Supabase on mount
   useEffect(() => {
@@ -133,6 +135,8 @@ export function useTheme() {
         const fallback = cached || FALLBACK_STATE
         lastLoadedRef.current = JSON.stringify(fallback)
         setThemeSettings(fallback)
+      } finally {
+        setHasHydratedTheme(true)
       }
     }
 
@@ -142,6 +146,7 @@ export function useTheme() {
   // Persist theme changes to Supabase
   useEffect(() => {
     if (!themeSettings) return
+    if (!hasHydratedTheme) return
 
     const saveChanges = async () => {
       const payloadString = JSON.stringify(themeSettings)
@@ -191,7 +196,7 @@ export function useTheme() {
 
     const timer = setTimeout(saveChanges, SAVE_DEBOUNCE_MS)
     return () => clearTimeout(timer)
-  }, [themeSettings])
+  }, [themeSettings, hasHydratedTheme])
 
   // Load custom fonts globally so they work outside admin pages too.
   useEffect(() => {

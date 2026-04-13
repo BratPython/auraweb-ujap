@@ -50,11 +50,17 @@ export default function AdminProtectedRoute() {
 
     // 4. Mantenemos el componente atento si el usuario cierra sesión
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') {
-        if (mounted) setStatus('unauthenticated')
-      } else if (session) {
-        checkAdminAccess()
-      }
+      // Keep callback sync to avoid auth lock deadlocks.
+      setTimeout(() => {
+        if (!mounted) return
+        if (event === 'SIGNED_OUT') {
+          setStatus('unauthenticated')
+          return
+        }
+        if (session) {
+          void checkAdminAccess()
+        }
+      }, 0)
     })
 
     return () => {

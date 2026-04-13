@@ -7,12 +7,14 @@ import ProductDetail from './components/product/ProductDetail'
 import LoginAdmin from './components/admin/LoginAdmin'
 import AdminProtectedRoute from './components/admin/AdminProtectedRoute'
 import AdminUsers from './components/admin/AdminUsers'
+import AdminInvoiceSettings from './components/admin/AdminInvoiceSettings'
 import LoadingSpinner from './components/ui/LoadingSpinner'
 import { AdminProvider } from './hooks/useAdminMode'
 import { useTheme } from './hooks/useTheme'
 import { ShopProvider } from './hooks/useShop'
 import AuthPage from './components/shop/AuthPage'
 import CartPage from './components/shop/CartPage'
+import CheckoutPaymentPage from './components/shop/CheckoutPaymentPage'
 import FiscalInvoicePage from './components/shop/FiscalInvoicePage'
 import MyInvoicesPage from './components/shop/MyInvoicesPage'
 import './styles/index.css'
@@ -45,6 +47,10 @@ function AppRoutes() {
           path="/admin/usuarios"
           element={<AdminUsers activeMode={activeMode} onModeChange={setActiveMode} />}
         />
+        <Route
+          path="/admin/factura"
+          element={<AdminInvoiceSettings activeMode={activeMode} onModeChange={setActiveMode} />}
+        />
       </Route>
 
       {/* Public pages — admin controls appear via toggle */}
@@ -58,6 +64,7 @@ function AppRoutes() {
       {/* Facturas fiscal flow */}
       <Route path="/facturas/auth" element={<AuthPage />} />
       <Route path="/facturas/carrito" element={<CartPage />} />
+      <Route path="/facturas/pago" element={<CheckoutPaymentPage />} />
       <Route path="/facturas/factura" element={<FiscalInvoicePage />} />
       <Route path="/facturas/factura/:invoiceId" element={<FiscalInvoicePage />} />
       <Route path="/facturas/mis-facturas" element={<MyInvoicesPage />} />
@@ -65,6 +72,7 @@ function AppRoutes() {
       {/* Legacy shop aliases */}
       <Route path="/shop/auth" element={<Navigate to="/facturas/auth" replace />} />
       <Route path="/shop/carrito" element={<Navigate to="/facturas/carrito" replace />} />
+      <Route path="/shop/pago" element={<Navigate to="/facturas/pago" replace />} />
       <Route path="/shop/factura" element={<Navigate to="/facturas/factura" replace />} />
       <Route path="/shop/mis-facturas" element={<Navigate to="/facturas/mis-facturas" replace />} />
     </Routes>

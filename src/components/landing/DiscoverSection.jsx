@@ -5,10 +5,66 @@ import { supabase } from '../../supabaseClient'
 import { useAdminMode } from '../../hooks/useAdminMode'
 import ImageWithLoader from '../ui/ImageWithLoader'
 
+const DISCOVER_CACHE_KEY = 'aura:discoverProductsCache'
+const QUERY_TIMEOUT_MS = 8000
+
+function withTimeout(promise, timeoutMs = QUERY_TIMEOUT_MS) {
+  let timeoutId
+  const requestPromise = Promise.resolve(promise)
+
+  return new Promise((resolve, reject) => {
+    timeoutId = setTimeout(() => reject(new Error('SUPABASE_DISCOVER_TIMEOUT')), timeoutMs)
+
+    requestPromise
+      .then((result) => {
+        clearTimeout(timeoutId)
+        resolve(result)
+      })
+      .catch((error) => {
+        clearTimeout(timeoutId)
+        reject(error)
+      })
+  })
+}
+
+function readDiscoverCache() {
+  try {
+    const raw = localStorage.getItem(DISCOVER_CACHE_KEY)
+    if (!raw) {
+      return { displayProducts: [], featuredProducts: [], allProducts: [] }
+    }
+
+    const parsed = JSON.parse(raw)
+    return {
+      displayProducts: Array.isArray(parsed?.displayProducts) ? parsed.displayProducts : [],
+      featuredProducts: Array.isArray(parsed?.featuredProducts) ? parsed.featuredProducts : [],
+      allProducts: Array.isArray(parsed?.allProducts) ? parsed.allProducts : [],
+    }
+  } catch {
+    return { displayProducts: [], featuredProducts: [], allProducts: [] }
+  }
+}
+
+function writeDiscoverCache(payload) {
+  try {
+    localStorage.setItem(
+      DISCOVER_CACHE_KEY,
+      JSON.stringify({
+        displayProducts: Array.isArray(payload?.displayProducts) ? payload.displayProducts : [],
+        featuredProducts: Array.isArray(payload?.featuredProducts) ? payload.featuredProducts : [],
+        allProducts: Array.isArray(payload?.allProducts) ? payload.allProducts : [],
+      })
+    )
+  } catch {
+    // Ignore cache write failures.
+  }
+}
+
 export default function DiscoverSection() {
-  const [displayProducts, setDisplayProducts] = useState([]) // Products to show in grid
-  const [featuredProducts, setFeaturedProducts] = useState([]) // Only destacado=true products (for modal)
-  const [allProducts, setAllProducts] = useState([])
+  const cachedState = readDiscoverCache()
+  const [displayProducts, setDisplayProducts] = useState(cachedState.displayProducts) // Products to show in grid
+  const [featuredProducts, setFeaturedProducts] = useState(cachedState.featuredProducts) // Only destacado=true products (for modal)
+  const [allProducts, setAllProducts] = useState(cachedState.allProducts)
   const [showFeaturedModal, setShowFeaturedModal] = useState(false)
   const [search, setSearch] = useState('')
   const [savingProductId, setSavingProductId] = useState(null)
@@ -35,23 +91,27 @@ export default function DiscoverSection() {
   // Fetch featured products (3 selected by admin) and randomize the rest.
   const fetchFeatured = useCallback(async () => {
     try {
-      const { data: featuredData, error: featuredError } = await supabase
+      const { data: featuredData, error: featuredError } = await withTimeout(
+        supabase
         .from('productos')
         .select('id, nombre, imagenes, precio, destacado, created_at')
         .eq('is_active', true)
         .eq('destacado', true)
         .order('created_at', { ascending: false })
         .limit(3)
+      )
 
       if (featuredError) throw featuredError
 
       // Store actual featured products for the modal
       setFeaturedProducts(featuredData || [])
 
-      const { data: allData, error: allError } = await supabase
+      const { data: allData, error: allError } = await withTimeout(
+        supabase
         .from('productos')
         .select('id, nombre, imagenes, precio, destacado, created_at')
         .eq('is_active', true)
+      )
 
       if (allError) throw allError
 
@@ -71,10 +131,17 @@ export default function DiscoverSection() {
       const nextDisplay = [...fixedFeatured, ...randomized].slice(0, maxDisplay)
       setDisplayProducts(nextDisplay)
       setOffset(0)
+
+      writeDiscoverCache({
+        displayProducts: nextDisplay,
+        featuredProducts: featuredData || [],
+        allProducts: allItems,
+      })
     } catch {
-      setFeaturedProducts([])
-      setAllProducts([])
-      setDisplayProducts([])
+      const cached = readDiscoverCache()
+      setFeaturedProducts(cached.featuredProducts)
+      setAllProducts(cached.allProducts)
+      setDisplayProducts(cached.displayProducts)
       setOffset(0)
     }
   }, [maxDisplay])

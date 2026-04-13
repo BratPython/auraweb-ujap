@@ -13,7 +13,7 @@ function formatDate(isoDate) {
 
 export default function MyInvoicesPage() {
   const navigate = useNavigate()
-  const { currentUser, getUserInvoices } = useShop()
+  const { currentUser, getUserInvoices, invoicesLoading } = useShop()
   const [selectedId, setSelectedId] = useState('')
 
   const invoices = useMemo(() => getUserInvoices(), [getUserInvoices])
@@ -41,6 +41,8 @@ export default function MyInvoicesPage() {
         <div className="shop-card">
           <h2>Mis facturas</h2>
           <p>Historial de facturas emitidas para {currentUser.legalName}.</p>
+
+          {invoicesLoading ? <p className="shop-note">Cargando historial...</p> : null}
 
           {!invoices.length ? (
             <p>No tienes facturas emitidas aun.</p>

@@ -1,10 +1,8 @@
-import React, { createContext, useContext, useMemo, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../supabaseClient'
+import { buildNomenclature, loadInvoiceSettings } from '../config/invoiceSettings'
 
-const SHOP_USERS_KEY = 'aura:shopUsers'
-const SHOP_SESSION_KEY = 'aura:shopSession'
 const SHOP_CART_KEY = 'aura:shopCart'
-const SHOP_INVOICES_KEY = 'aura:shopInvoices'
 const IVA_RATE = 0.16
 
 const ShopContext = createContext(null)
@@ -28,18 +26,71 @@ function writeJson(key, value) {
   }
 }
 
+function roundMoney(value) {
+  return Math.round((Number(value) || 0) * 100) / 100
+}
+
+function mapClientRowToUser(row, authUser) {
+  return {
+    id: authUser.id,
+    email: authUser.email || row?.email || '',
+    customerType: row?.tipo_persona || 'Natural',
+    legalName: row?.nombre_razon_social || authUser.email || 'Cliente',
+    docType: row?.tipo_documento || 'V',
+    docNumber: row?.numero_documento || '',
+    fiscalAddress: row?.domicilio_fiscal || '',
+    phone: row?.telefono || '',
+  }
+}
+
+function mapInvoiceRow(row) {
+  if (!row) return null
+  return {
+    id: row.id,
+    userId: row.auth_user_id,
+    createdAt: row.created_at,
+    title: row.title,
+    issuer: row.issuer,
+    controlFiscal: row.control_fiscal,
+    fecha: row.fecha,
+    hora: row.hora,
+    client: row.customer_profile,
+    items: row.items,
+    totals: row.totals,
+    payments: row.payments,
+    printer: row.printer,
+    adminSettingsSnapshot: row.admin_settings_snapshot,
+  }
+}
+
 function normalizeDocumentNumber(value) {
   return String(value || '').replace(/[^0-9A-Za-z]/g, '').trim().toUpperCase()
 }
 
-function createInvoiceNumbers() {
-  const now = Date.now()
-  const base = String(now).slice(-8)
-  return {
-    numeroFactura: `F-${base}`,
-    numeroControl: `C-${String(now + 137).slice(-8)}`,
-    rangoAsignado: 'Desde F-00000001 hasta F-99999999',
-  }
+function normalizePaymentBreakdown(entries = []) {
+  if (!Array.isArray(entries)) return []
+
+  return entries
+    .map((entry) => {
+      const method = String(entry?.method || '').trim().toLowerCase()
+      const amount = roundMoney(entry?.amount)
+      const status = String(entry?.status || (amount > 0 ? 'paid' : 'pending')).trim().toLowerCase()
+
+      return {
+        method,
+        amount,
+        status,
+        reference: String(entry?.reference || '').trim(),
+        details: entry?.details && typeof entry.details === 'object' ? entry.details : null,
+      }
+    })
+    .filter((entry) => entry.amount > 0)
+}
+
+function buildAssignedRange(controlFiscal = {}) {
+  const min = String(controlFiscal.rangoMin ?? '').replace(/\D/g, '').slice(0, 8) || '00000001'
+  const max = String(controlFiscal.rangoMax ?? '').replace(/\D/g, '').slice(0, 8) || '99999999'
+  return `Desde F-${min.padStart(8, '0')} hasta F-${max.padStart(8, '0')}`
 }
 
 function formatSeniatDate(date) {
@@ -104,32 +155,164 @@ function calculateTotals(cartItems) {
 }
 
 export function ShopProvider({ children }) {
-  const [users, setUsers] = useState(() => readJson(SHOP_USERS_KEY, []))
-  const [currentUser, setCurrentUser] = useState(() => readJson(SHOP_SESSION_KEY, null))
+  const [currentUser, setCurrentUser] = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [invoicesLoading, setInvoicesLoading] = useState(false)
   const [cartItems, setCartItems] = useState(() => readJson(SHOP_CART_KEY, []))
-  const [invoices, setInvoices] = useState(() => readJson(SHOP_INVOICES_KEY, []))
+  const [invoices, setInvoices] = useState([])
 
-  function persistUsers(nextUsers) {
-    setUsers(nextUsers)
-    writeJson(SHOP_USERS_KEY, nextUsers)
-  }
-
-  function persistSession(user) {
+  const persistSession = useCallback((user) => {
     setCurrentUser(user)
-    writeJson(SHOP_SESSION_KEY, user)
-  }
+  }, [])
 
-  function persistCart(nextCart) {
+  const persistCart = useCallback((nextCart) => {
     setCartItems(nextCart)
     writeJson(SHOP_CART_KEY, nextCart)
-  }
+  }, [])
 
-  function persistInvoices(nextInvoices) {
-    setInvoices(nextInvoices)
-    writeJson(SHOP_INVOICES_KEY, nextInvoices)
-  }
+  const syncProfileFromAuth = useCallback(async (authUser) => {
+    if (!authUser?.id) return null
 
-  function registerUser(payload) {
+    let profileRow = null
+
+    const { data, error } = await supabase
+      .from('clientes')
+      .select('*')
+      .eq('auth_user_id', authUser.id)
+      .maybeSingle()
+
+    if (error) {
+      throw error
+    }
+
+    profileRow = data
+
+    if (!profileRow) {
+      const insertPayload = {
+        auth_user_id: authUser.id,
+        email: authUser.email || '',
+        tipo_persona: String(authUser.user_metadata?.customerType || 'Natural'),
+        tipo_documento: String(authUser.user_metadata?.docType || 'V'),
+        numero_documento: normalizeDocumentNumber(authUser.user_metadata?.docNumber || ''),
+        nombre_razon_social: String(authUser.user_metadata?.legalName || authUser.email || 'Cliente').trim(),
+        domicilio_fiscal: String(authUser.user_metadata?.fiscalAddress || '').trim(),
+        telefono: String(authUser.user_metadata?.phone || '').trim(),
+      }
+
+      const { data: inserted, error: insertError } = await supabase
+        .from('clientes')
+        .insert(insertPayload)
+        .select('*')
+        .single()
+
+      if (insertError) {
+        throw insertError
+      }
+
+      profileRow = inserted
+    }
+
+    const mapped = mapClientRowToUser(profileRow, authUser)
+    persistSession(mapped)
+    return mapped
+  }, [persistSession])
+
+  const loadInvoicesForUser = useCallback(async (authUserId) => {
+    if (!authUserId) {
+      setInvoices([])
+      return []
+    }
+
+    setInvoicesLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('shop_invoices')
+        .select('*')
+        .eq('auth_user_id', authUserId)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        throw error
+      }
+
+      const nextInvoices = (data || []).map(mapInvoiceRow).filter(Boolean)
+      setInvoices(nextInvoices)
+      return nextInvoices
+    } finally {
+      setInvoicesLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+
+    async function syncFromSession(session) {
+      if (!active) return
+
+      const authUser = session?.user || null
+
+      if (!authUser) {
+        setInvoices([])
+        persistSession(null)
+        setAuthLoading(false)
+        return
+      }
+
+      setAuthLoading(true)
+      try {
+        await syncProfileFromAuth(authUser)
+        await loadInvoicesForUser(authUser.id)
+      } catch (error) {
+        console.error('Error sincronizando sesion de cliente:', error)
+      } finally {
+        if (active) setAuthLoading(false)
+      }
+    }
+
+    async function bootstrap() {
+      setAuthLoading(true)
+      try {
+        const { data: sessionData, error } = await supabase.auth.getSession()
+        if (error) throw error
+
+        const authUser = sessionData?.session?.user || null
+        if (!active) return
+
+        if (!authUser) {
+          setInvoices([])
+          persistSession(null)
+          return
+        }
+
+        await syncProfileFromAuth(authUser)
+        await loadInvoicesForUser(authUser.id)
+      } catch (error) {
+        console.error('Error iniciando sesion de cliente:', error)
+        if (active) {
+          setInvoices([])
+          persistSession(null)
+        }
+      } finally {
+        if (active) setAuthLoading(false)
+      }
+    }
+
+    bootstrap()
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      // Keep callback sync to avoid GoTrue lock contention; defer async work.
+      setTimeout(() => {
+        void syncFromSession(session)
+      }, 0)
+    })
+
+    return () => {
+      active = false
+      listener.subscription.unsubscribe()
+    }
+  }, [loadInvoicesForUser, persistSession, syncProfileFromAuth])
+
+  async function registerUser(payload) {
     const email = String(payload.email || '').trim().toLowerCase()
     const password = String(payload.password || '')
 
@@ -137,41 +320,85 @@ export function ShopProvider({ children }) {
       return { ok: false, error: 'Correo y contraseña son obligatorios.' }
     }
 
-    if (users.some((u) => u.email === email)) {
-      return { ok: false, error: 'Ese correo ya está registrado.' }
-    }
-
-    const nextUser = {
-      id: crypto.randomUUID(),
-      customerType: payload.customerType,
+    const metadata = {
+      customerType: String(payload.customerType || 'Natural'),
       legalName: String(payload.legalName || '').trim(),
-      docType: payload.docType,
+      docType: String(payload.docType || 'V'),
       docNumber: normalizeDocumentNumber(payload.docNumber),
       fiscalAddress: String(payload.fiscalAddress || '').trim(),
+      phone: String(payload.phone || '').trim(),
+    }
+
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: { data: metadata },
+    })
+
+    if (error) {
+      return { ok: false, error: error.message || 'No se pudo registrar la cuenta.' }
     }
 
-    const nextUsers = [...users, nextUser]
-    persistUsers(nextUsers)
-    persistSession(nextUser)
+    if (!data?.user) {
+      return { ok: false, error: 'No se pudo crear el usuario en Auth.' }
+    }
 
-    return { ok: true, user: nextUser }
+    if (!data.session) {
+      return {
+        ok: true,
+        pendingVerification: true,
+        message: 'Cuenta creada. Revisa tu correo para confirmar y luego iniciar sesion.',
+      }
+    }
+
+    try {
+      const { error: profileError } = await supabase
+        .from('clientes')
+        .upsert(
+          {
+            auth_user_id: data.user.id,
+            email,
+            tipo_persona: metadata.customerType,
+            tipo_documento: metadata.docType,
+            numero_documento: metadata.docNumber,
+            nombre_razon_social: metadata.legalName,
+            domicilio_fiscal: metadata.fiscalAddress,
+            telefono: metadata.phone,
+          },
+          { onConflict: 'auth_user_id' }
+        )
+
+      if (profileError) throw profileError
+
+      const mapped = await syncProfileFromAuth(data.user)
+      await loadInvoicesForUser(data.user.id)
+      return { ok: true, user: mapped }
+    } catch (profileError) {
+      console.error('Error guardando perfil del cliente:', profileError)
+      return { ok: false, error: 'Cuenta creada, pero no se pudo guardar el perfil fiscal.' }
+    }
   }
 
-  function loginUser({ email, password }) {
+  async function loginUser({ email, password }) {
     const normalizedEmail = String(email || '').trim().toLowerCase()
-    const user = users.find((u) => u.email === normalizedEmail && u.password === String(password || ''))
 
-    if (!user) {
-      return { ok: false, error: 'Credenciales inválidas.' }
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: normalizedEmail,
+      password: String(password || ''),
+    })
+
+    if (error || !data?.user) {
+      return { ok: false, error: error?.message || 'Credenciales inválidas.' }
     }
 
-    persistSession(user)
-    return { ok: true, user }
+    const mapped = await syncProfileFromAuth(data.user)
+    await loadInvoicesForUser(data.user.id)
+    return { ok: true, user: mapped }
   }
 
-  function logoutUser() {
+  async function logoutUser() {
+    await supabase.auth.signOut()
+    setInvoices([])
     persistSession(null)
   }
 
@@ -228,13 +455,33 @@ export function ShopProvider({ children }) {
     persistCart([])
   }
 
-  async function buildInvoice() {
+  const getCartTotals = useCallback(() => {
+    return calculateTotals(cartItems)
+  }, [cartItems])
+
+  async function buildInvoice({ paymentBreakdown = [] } = {}) {
     if (!currentUser) {
       return { ok: false, error: 'Debes iniciar sesión para facturar.' }
     }
 
     if (!cartItems.length) {
       return { ok: false, error: 'No hay productos en el carrito.' }
+    }
+
+    const totals = calculateTotals(cartItems)
+    const normalizedPayments = normalizePaymentBreakdown(paymentBreakdown)
+    const expectedTotal = roundMoney(totals.totalOperacion)
+    const paidTotal = roundMoney(normalizedPayments.reduce((acc, payment) => acc + payment.amount, 0))
+
+    if (!normalizedPayments.length) {
+      return { ok: false, error: 'Debes registrar al menos un pago antes de facturar.' }
+    }
+
+    if (Math.abs(expectedTotal - paidTotal) > 0.009) {
+      return {
+        ok: false,
+        error: `El total pagado ($${paidTotal.toFixed(2)}) debe coincidir con el total de la orden ($${expectedTotal.toFixed(2)}).`,
+      }
     }
 
     try {
@@ -281,23 +528,32 @@ export function ShopProvider({ children }) {
     }
 
     const now = new Date()
-    const numbers = createInvoiceNumbers()
-    const totals = calculateTotals(cartItems)
+    const invoiceSettings = loadInvoiceSettings()
+    const nomenclaturaFactura = buildNomenclature({
+      date: now,
+      dateFormat: invoiceSettings?.printer?.nomenclaturaFormatoFactura,
+    })
+    const nomenclaturaControl = buildNomenclature({
+      date: now,
+      dateFormat: invoiceSettings?.printer?.nomenclaturaFormatoControl,
+    })
 
     const invoice = {
       id: crypto.randomUUID(),
       userId: currentUser.id,
       createdAt: now.toISOString(),
-      title: 'FACTURA',
+      title: invoiceSettings.controlFiscal.tituloFactura,
       issuer: {
-        razonSocial: 'Aura Web C.A.',
-        domicilio: 'Av. Principal de Valencia, Edo. Carabobo, Venezuela',
-        rif: 'J-41234567-8',
+        razonSocial: invoiceSettings.issuer.razonSocial,
+        domicilio: invoiceSettings.issuer.domicilio,
+        rif: invoiceSettings.issuer.rif,
+        telefono: invoiceSettings.issuer.telefono,
+        email: invoiceSettings.issuer.email,
       },
       controlFiscal: {
-        numeroFactura: numbers.numeroFactura,
-        numeroControl: numbers.numeroControl,
-        rangoAsignado: numbers.rangoAsignado,
+        numeroFactura: nomenclaturaFactura,
+        numeroControl: nomenclaturaControl,
+        rangoAsignado: buildAssignedRange(invoiceSettings.controlFiscal),
       },
       fecha: formatSeniatDate(now),
       hora: formatSeniatTime(now),
@@ -309,31 +565,89 @@ export function ShopProvider({ children }) {
       },
       items: totals.lineItems,
       totals,
-      printer: {
-        razonSocial: 'Imprenta Fiscal Demo 2026, C.A.',
-        rif: 'J-40987654-3',
-        nomenclatura: 'NFA-00-123456',
-        providencia: 'SNAT/2026/00077',
-        fechaAsignacion: '12032026',
+      payments: {
+        methods: normalizedPayments,
+        totalPaid: paidTotal,
+        currency: 'USD',
+        status: 'paid',
+        paidAt: now.toISOString(),
       },
+      printer: {
+        razonSocial: invoiceSettings.printer.razonSocial,
+        rif: invoiceSettings.printer.rif,
+        nomenclaturaFactura,
+        nomenclaturaControl,
+        providencia: invoiceSettings.printer.providencia,
+        fechaAsignacion: invoiceSettings.printer.fechaAsignacion,
+        serialFiscal: invoiceSettings.printer.serialFiscal,
+      },
+      adminSettingsSnapshot: invoiceSettings,
     }
 
-    persistInvoices([invoice, ...invoices])
+    const { data: insertedInvoice, error: invoiceInsertError } = await supabase
+      .from('shop_invoices')
+      .insert({
+        auth_user_id: currentUser.id,
+        title: invoice.title,
+        fecha: invoice.fecha,
+        hora: invoice.hora,
+        customer_profile: invoice.client,
+        issuer: invoice.issuer,
+        control_fiscal: invoice.controlFiscal,
+        printer: invoice.printer,
+        totals: invoice.totals,
+        items: invoice.items,
+        payments: invoice.payments,
+        admin_settings_snapshot: invoice.adminSettingsSnapshot,
+      })
+      .select('*')
+      .single()
+
+    if (invoiceInsertError) {
+      console.error('Error guardando factura en Supabase:', invoiceInsertError)
+      return { ok: false, error: 'No se pudo guardar la factura en la base de datos.' }
+    }
+
+    const persistedInvoice = mapInvoiceRow(insertedInvoice)
+    setInvoices((prev) => [persistedInvoice, ...prev])
 
     clearCart()
-    return { ok: true, invoice }
+    return { ok: true, invoice: persistedInvoice }
   }
 
   function getUserInvoices() {
     if (!currentUser) return []
-    return invoices
-      .filter((inv) => inv.userId === currentUser.id)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    return [...invoices].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   }
 
   function getInvoiceById(invoiceId) {
     if (!invoiceId) return null
     return invoices.find((inv) => inv.id === invoiceId) || null
+  }
+
+  async function fetchInvoiceById(invoiceId) {
+    if (!invoiceId || !currentUser?.id) return null
+
+    const fromCache = getInvoiceById(invoiceId)
+    if (fromCache) return fromCache
+
+    const { data, error } = await supabase
+      .from('shop_invoices')
+      .select('*')
+      .eq('id', invoiceId)
+      .eq('auth_user_id', currentUser.id)
+      .maybeSingle()
+
+    if (error || !data) {
+      return null
+    }
+
+    const mapped = mapInvoiceRow(data)
+    setInvoices((prev) => {
+      if (prev.some((inv) => inv.id === mapped.id)) return prev
+      return [mapped, ...prev]
+    })
+    return mapped
   }
 
   const subtotal = useMemo(
@@ -342,8 +656,9 @@ export function ShopProvider({ children }) {
   )
 
   const value = {
-    users,
     currentUser,
+    authLoading,
+    invoicesLoading,
     cartItems,
     subtotal,
     registerUser,
@@ -354,8 +669,10 @@ export function ShopProvider({ children }) {
     removeFromCart,
     clearCart,
     buildInvoice,
+    getCartTotals,
     getUserInvoices,
     getInvoiceById,
+    fetchInvoiceById,
   }
 
   return React.createElement(ShopContext.Provider, { value }, children)

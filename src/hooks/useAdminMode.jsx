@@ -34,7 +34,10 @@ export function AdminProvider({ children }) {
     supabase.auth.getSession().then(({ data }) => check(data.session))
 
     const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {
-      check(session)
+      // Keep callback sync to avoid auth lock deadlocks.
+      setTimeout(() => {
+        void check(session)
+      }, 0)
     })
 
     return () => { mounted = false; listener.subscription.unsubscribe() }
