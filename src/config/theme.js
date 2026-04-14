@@ -74,6 +74,7 @@ export const DEFAULT_TYPOGRAPHY = {
   titles: { size: '36px', family: BASE_FONTS.serif, spacing: '0px' },
   subtitles: { size: '28px', family: BASE_FONTS.serif, spacing: '0px' },
   paragraphs: { size: '16px', family: BASE_FONTS.body, spacing: '0px' },
+  buttons: { size: '14px' },
   banner: { size: '94px', family: BASE_FONTS.logo, spacing: '1px' },
 }
 

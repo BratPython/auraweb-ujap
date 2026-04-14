@@ -6,6 +6,8 @@
 .btn {
   padding: 8px 16px;
   border-radius: 6px;
+  font-size: var(--size-btn);
+  font-family: var(--font-btn);
   font-weight: 600;
   cursor: pointer;
   border: none;
@@ -26,7 +28,7 @@
 
 .btn-sm {
   padding: 4px 10px;
-  font-size: 11px;
+  font-size: clamp(11px, calc(var(--size-btn) - 2px), 28px);
   border-radius: 4px;
   background: var(--btn-bg, var(--card));
   border: none;
@@ -60,6 +62,8 @@
   border-radius: var(--radius-sm);
   border: 2px dashed rgba(128, 128, 128, .2);
   width: 100%;
+  font-size: var(--size-btn);
+  font-family: var(--font-btn);
   color: var(--color-body);
   cursor: pointer;
   transition: background .2s;

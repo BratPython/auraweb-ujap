@@ -98,50 +98,42 @@ export default function Header({ children, currentPage }) {
             )}
           </nav>
         </div>
+        {/* End of .header-left */}
 
-        <div className="header-right">
-          {currentUser ? (
-            <div className="session-chip" title={`Sesión activa: ${currentUser.legalName}`}>
-              <span className="session-dot" aria-hidden="true" />
-              <span className="session-text">{currentUser.legalName}</span>
-            </div>
-          ) : null}
+        {children}
 
-          {children}
-
-          {currentUser ? (
-            <button
-              type="button"
-              className="session-cart-btn"
-              onClick={() => setCartOpen(true)}
-              aria-label="Abrir carrito"
-              title="Abrir carrito"
-            >
-              <span>Carrito</span>
-              <strong>{cartCount}</strong>
-            </button>
-          ) : null}
-
-          {currentUser ? (
-            <button
-              type="button"
-              className="session-logout-btn"
-              onClick={logoutUser}
-              aria-label="Cerrar sesión"
-              title="Cerrar sesión"
-            >
-              Salir
-            </button>
-          ) : null}
-
+        {currentUser ? (
           <button
-            className={`hamburger${menuOpen ? ' open' : ''}`}
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Toggle menu"
+            type="button"
+            className="session-cart-btn"
+            onClick={() => setCartOpen(true)}
+            aria-label="Abrir carrito"
+            title="Abrir carrito"
           >
-            <span /><span /><span />
+            <span>Carrito</span>
+            <strong>{cartCount}</strong>
           </button>
-        </div>
+        ) : null}
+
+        {currentUser ? (
+          <button
+            type="button"
+            className="session-logout-btn"
+            onClick={logoutUser}
+            aria-label="Cerrar sesión"
+            title="Cerrar sesión"
+          >
+            Salir
+          </button>
+        ) : null}
+
+        <button
+          className={`hamburger${menuOpen ? ' open' : ''}`}
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Toggle menu"
+        >
+          <span /><span /><span />
+        </button>
 
         <nav className={`nav-mobile${menuOpen ? ' open' : ''}`}>
           {navLinks.map((link) =>

@@ -189,7 +189,8 @@ input.detail-input {
   padding: 16px;
   border: none;
   border-radius: var(--radius-sm);
-  font-size: 16px;
+  font-size: var(--size-btn);
+  font-family: var(--font-btn);
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
@@ -328,7 +329,8 @@ input.detail-input {
 .back-btn {
   background: none;
   border: none;
-  font-size: 14px;
+  font-size: var(--size-btn);
+  font-family: var(--font-btn);
   font-weight: 500;
   cursor: pointer;
   padding: 10px;
@@ -435,14 +437,71 @@ input.detail-input {
   text-align: center;
 }
 
+.product-qty-panel {
+  display: grid;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.product-qty-panel span {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
+.product-qty-controls {
+  width: min(220px, 100%);
+  display: grid;
+  grid-template-columns: 42px 1fr 42px;
+  gap: 6px;
+}
+
+.product-qty-controls button {
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 10px;
+  background: var(--btn-bg, var(--card));
+  color: var(--color-body);
+  font-size: var(--size-btn);
+  font-family: var(--font-btn);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.product-qty-controls button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.product-qty-controls input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  background: rgba(255, 255, 255, 0.68);
+  color: var(--color-body);
+  font-size: var(--size-btn);
+  font-family: var(--font-btn);
+  font-weight: 600;
+  text-align: center;
+}
+
+.product-qty-panel small {
+  font-family: var(--font-body);
+  font-size: 12px;
+  opacity: 0.72;
+}
+
 .btn-whatsapp {
   display: inline-block;
   text-align: center;
   padding: 14px 28px;
   border-radius: var(--radius-sm);
-  font-size: 15px;
+  font-size: var(--size-btn);
   font-weight: 600;
-  font-family: var(--font-body);
+  font-family: var(--font-btn);
   text-decoration: none;
   transition: transform .2s, box-shadow .2s;
   box-shadow: var(--shadow-sm);
@@ -458,14 +517,14 @@ input.detail-input {
 .back-link {
   background: none;
   border: none;
-  font-size: 13px;
+  font-size: var(--size-btn);
   font-weight: 500;
   cursor: pointer;
   padding: 0;
   opacity: .6;
   transition: opacity .2s;
   text-align: left;
-  font-family: var(--font-body);
+  font-family: var(--font-btn);
   margin-top: 12px;
 }
 

@@ -11,11 +11,14 @@ export function mergeTypography(input = {}) {
     titles: { ...DEFAULT_TYPOGRAPHY.titles, ...(input.titles || {}) },
     subtitles: { ...DEFAULT_TYPOGRAPHY.subtitles, ...(input.subtitles || {}) },
     paragraphs: { ...DEFAULT_TYPOGRAPHY.paragraphs, ...(input.paragraphs || {}) },
+    buttons: { ...DEFAULT_TYPOGRAPHY.buttons, ...(input.buttons || {}) },
     banner: { ...DEFAULT_TYPOGRAPHY.banner, ...(input.banner || {}) },
   }
 }
 
 export function buildVarsFromTypography(typography) {
+  const buttonSize = typography.buttons?.size || typography.paragraphs.size
+
   return {
     '--size-title': typography.titles.size,
     '--font-title': typography.titles.family,
@@ -37,13 +40,13 @@ export function buildVarsFromTypography(typography) {
     '--size-brand': typography.titles.size,
     '--letter-brand': typography.titles.spacing,
     '--font-nav': typography.paragraphs.family,
-    '--size-nav': '14px',
+    '--size-nav': buttonSize,
     '--font-card-title': typography.paragraphs.family,
     '--size-card-title': '16px',
     '--font-btn': typography.paragraphs.family,
-    '--size-btn': typography.paragraphs.size,
+    '--size-btn': buttonSize,
     '--font-btn-hover': typography.paragraphs.family,
-    '--size-btn-hover': typography.paragraphs.size,
+    '--size-btn-hover': buttonSize,
     '--font-footer-title': typography.subtitles.family,
     '--size-footer-title': typography.subtitles.size,
     '--font-footer': typography.paragraphs.family,

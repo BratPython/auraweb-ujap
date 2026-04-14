@@ -30,6 +30,38 @@ function roundMoney(value) {
   return Math.round((Number(value) || 0) * 100) / 100
 }
 
+function authErrorMessage(error) {
+  return String(error?.message || '').trim()
+}
+
+function isAuth429Error(error) {
+  const status = Number(error?.status)
+  const code = String(error?.code || '').toLowerCase()
+  const message = authErrorMessage(error).toLowerCase()
+
+  return (
+    status === 429 ||
+    code.includes('429') ||
+    message.includes('too many request') ||
+    message.includes('rate limit')
+  )
+}
+
+function isUserAlreadyRegisteredError(error) {
+  const code = String(error?.code || '').toLowerCase()
+  const message = authErrorMessage(error).toLowerCase()
+  return code.includes('already') || message.includes('already registered')
+}
+
+function isEmailConfirmationRequiredError(error) {
+  const message = authErrorMessage(error).toLowerCase()
+  return (
+    message.includes('email not confirmed') ||
+    message.includes('confirm your email') ||
+    message.includes('needs to be confirmed')
+  )
+}
+
 function mapClientRowToUser(row, authUser) {
   return {
     id: authUser.id,
@@ -714,26 +746,102 @@ export function ShopProvider({ children }) {
       phone: String(payload.phone || '').trim(),
     }
 
+    async function attemptImmediateLogin() {
+      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (loginError) {
+        return { ok: false, error: loginError }
+      }
+
+      if (!loginData?.user || !loginData?.session) {
+        return {
+          ok: false,
+          error: { message: 'No fue posible abrir sesion luego del registro.' },
+        }
+      }
+
+      return {
+        ok: true,
+        user: loginData.user,
+        session: loginData.session,
+      }
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: metadata },
     })
 
+    let authUser = data?.user || null
+    let authSession = data?.session || null
+
     if (error) {
-      return { ok: false, error: error.message || 'No se pudo registrar la cuenta.' }
+      if (isAuth429Error(error)) {
+        return {
+          ok: false,
+          error: 'Supabase devolvio 429 (Too Many Requests). La app no aplica espera local, pero ese limite viene del servidor.',
+        }
+      }
+
+      if (isUserAlreadyRegisteredError(error)) {
+        const existingLogin = await attemptImmediateLogin()
+
+        if (!existingLogin.ok) {
+          if (isAuth429Error(existingLogin.error)) {
+            return {
+              ok: false,
+              error: 'Supabase devolvio 429 (Too Many Requests) al iniciar sesion. La app no aplica espera local, pero ese limite viene del servidor.',
+            }
+          }
+
+          return {
+            ok: false,
+            error: 'El correo ya esta registrado y la contraseña no coincide.',
+          }
+        }
+
+        authUser = existingLogin.user
+        authSession = existingLogin.session
+      } else {
+        return { ok: false, error: authErrorMessage(error) || 'No se pudo registrar la cuenta.' }
+      }
     }
 
-    if (!data?.user) {
+    if (!authUser) {
       return { ok: false, error: 'No se pudo crear el usuario en Auth.' }
     }
 
-    if (!data.session) {
-      return {
-        ok: true,
-        pendingVerification: true,
-        message: 'Cuenta creada. Revisa tu correo para confirmar y luego iniciar sesion.',
+    if (!authSession) {
+      const immediateLogin = await attemptImmediateLogin()
+
+      if (!immediateLogin.ok) {
+        if (isAuth429Error(immediateLogin.error)) {
+          return {
+            ok: false,
+            error: 'Supabase devolvio 429 (Too Many Requests) al activar sesion. La app no aplica espera local, pero ese limite viene del servidor.',
+          }
+        }
+
+        if (isEmailConfirmationRequiredError(immediateLogin.error)) {
+          return {
+            ok: false,
+            error:
+              'Tu proyecto aun exige confirmar correo. Desactiva Confirm email en Supabase > Authentication > Providers > Email para activar cuentas al instante.',
+          }
+        }
+
+        return {
+          ok: false,
+          error: authErrorMessage(immediateLogin.error) || 'No se pudo activar la sesion luego del registro.',
+        }
       }
+
+      authUser = immediateLogin.user
+      authSession = immediateLogin.session
     }
 
     try {
@@ -741,7 +849,7 @@ export function ShopProvider({ children }) {
         .from('clientes')
         .upsert(
           {
-            auth_user_id: data.user.id,
+            auth_user_id: authUser.id,
             email,
             tipo_persona: metadata.customerType,
             tipo_documento: metadata.docType,
@@ -755,10 +863,14 @@ export function ShopProvider({ children }) {
 
       if (profileError) throw profileError
 
-      const mapped = await syncProfileFromAuth(data.user)
-      await loadInvoicesForUser(data.user.id)
-      await syncPendingCheckout(data.user.id)
-      return { ok: true, user: mapped }
+      const mapped = await syncProfileFromAuth(authUser)
+      await loadInvoicesForUser(authUser.id)
+      await syncPendingCheckout(authUser.id)
+      return {
+        ok: true,
+        user: mapped,
+        message: 'Cuenta creada y activa automaticamente.',
+      }
     } catch (profileError) {
       console.error('Error guardando perfil del cliente:', profileError)
       return { ok: false, error: 'Cuenta creada, pero no se pudo guardar el perfil fiscal.' }

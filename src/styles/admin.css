@@ -489,6 +489,8 @@
   border: none;
   border-radius: 8px;
   padding: 11px 14px;
+  font-size: var(--size-btn);
+  font-family: var(--font-btn);
   font-weight: 700;
   cursor: pointer;
   background: var(--btn-hover);
@@ -581,6 +583,8 @@
   border: none;
   border-radius: 8px;
   padding: 10px 12px;
+  font-size: var(--size-btn);
+  font-family: var(--font-btn);
   font-weight: 700;
   background: var(--btn-hover);
   color: var(--color-btn-hover);
@@ -612,6 +616,8 @@
   padding: 10px 12px;
   background: var(--btn-hover);
   color: var(--color-btn-hover);
+  font-size: var(--size-btn);
+  font-family: var(--font-btn);
   font-weight: 700;
   cursor: pointer;
 }
@@ -634,7 +640,8 @@
   border: none;
   border-radius: 8px;
   padding: 8px 10px;
-  font-size: 12px;
+  font-size: var(--size-btn);
+  font-family: var(--font-btn);
   font-weight: 700;
   background: var(--btn-hover);
   color: var(--color-btn-hover);
@@ -664,6 +671,8 @@
   border: none;
   border-radius: 8px;
   padding: 9px 12px;
+  font-size: var(--size-btn);
+  font-family: var(--font-btn);
   font-weight: 700;
   background: rgba(0, 0, 0, .08);
   color: var(--color-body);
@@ -689,6 +698,8 @@
   border: none;
   border-radius: 8px;
   padding: 10px 12px;
+  font-size: var(--size-btn);
+  font-family: var(--font-btn);
   font-weight: 700;
   background: var(--btn-hover);
   color: var(--color-btn-hover);
@@ -838,6 +849,8 @@
   border: none;
   border-radius: 8px;
   padding: 10px 12px;
+  font-size: var(--size-btn);
+  font-family: var(--font-btn);
   font-weight: 700;
   cursor: pointer;
 }

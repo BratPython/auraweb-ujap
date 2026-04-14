@@ -251,7 +251,21 @@ export default function CheckoutPaymentPage() {
   }, [navigate, pendingCheckout?.id, pendingCheckoutList, requestedCheckoutId, selectPendingCheckout])
 
   useEffect(() => {
-    const safePct = remainingToPay <= 0 ? 0 : Math.max(0, Math.min(100, stripePercentage))
+    const hasStripePaid = stripePaidTotal > PAYMENT_EPSILON
+    const hasPayPalPaid = paypalPaidTotal > PAYMENT_EPSILON
+
+    let safePct = remainingToPay <= 0 ? 0 : Math.max(0, Math.min(100, stripePercentage))
+
+    // Si ya hubo un pago parcial en un solo metodo, favorece automaticamente el metodo opuesto
+    // para el siguiente intento (sin bloquear que luego el usuario lo vuelva a mover).
+    if (remainingToPay > PAYMENT_EPSILON) {
+      if (hasPayPalPaid && !hasStripePaid) {
+        safePct = 100
+      } else if (hasStripePaid && !hasPayPalPaid) {
+        safePct = 0
+      }
+    }
+
     const nextStripe = remainingToPay <= 0 ? 0 : money((remainingToPay * safePct) / 100)
     const nextPayPal = money(Math.max(0, remainingToPay - nextStripe))
 
@@ -262,7 +276,7 @@ export default function CheckoutPaymentPage() {
     setStripeClientSecret('')
     setError('')
     setStatus('')
-  }, [remainingToPay, stripePercentage])
+  }, [paypalPaidTotal, remainingToPay, stripePaidTotal, stripePercentage])
 
   useEffect(() => {
     setStripeClientSecret('')

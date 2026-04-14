@@ -47,11 +47,13 @@ export default function AuthPage() {
     setSubmitting(true)
     const result = await registerUser(registerForm)
     setSubmitting(false)
-    if (!result.ok) setError(result.error)
-    if (result.pendingVerification) {
-      setStatus(result.message || 'Cuenta creada. Verifica tu correo para activar el acceso.')
-      setMode('login')
+    if (!result.ok) {
+      setError(result.error)
+      return
     }
+
+    setStatus(result.message || 'Cuenta creada y activa automaticamente.')
+    navigate('/facturas/carrito')
   }
 
   return (

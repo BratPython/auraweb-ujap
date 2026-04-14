@@ -57,9 +57,9 @@
 
   .nav-mobile a {
     padding: 12px;
-    font-size: 16px;
+    font-size: var(--size-btn);
     color: var(--color-nav);
-    font-family: var(--font-nav);
+    font-family: var(--font-btn);
     background: rgba(128, 128, 128, .05);
     border-radius: 6px;
     text-align: center;
@@ -70,7 +70,7 @@
   }
 
   .theme-segment-btn {
-    font-size: 11px;
+    font-size: clamp(11px, calc(var(--size-btn) - 1px), 26px);
     padding: 7px 8px;
   }
 

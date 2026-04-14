@@ -34,6 +34,7 @@ export default function ProductDetail({ activeMode, onModeChange }) {
   const [editDiscount, setEditDiscount] = useState('0')
   const [editStock, setEditStock] = useState('0')
   const [agotado, setAgotado] = useState(false)
+  const [purchaseQty, setPurchaseQty] = useState(1)
 
   const discount = Math.max(0, Math.min(99, Number.parseInt(product?.is_descuento, 10) || 0))
   const basePrice = Number.parseFloat(product?.precio) || 0
@@ -41,6 +42,8 @@ export default function ProductDetail({ activeMode, onModeChange }) {
     ? Math.max(0, basePrice * (1 - discount / 100))
     : basePrice
   const convertedPriceVes = bcvRate ? finalPrice * bcvRate : null
+  const availableStock = Math.max(0, Number.parseInt(product?.stock, 10) || 0)
+  const isOutOfStock = !!product?.agotado || availableStock <= 0
 
   const formatPrice = (value) => {
     const num = Number(value) || 0
@@ -81,6 +84,29 @@ export default function ProductDetail({ activeMode, onModeChange }) {
     }
     fetchProduct()
   }, [id, navigate])
+
+  useEffect(() => {
+    setPurchaseQty(1)
+  }, [product?.id])
+
+  useEffect(() => {
+    if (!availableStock) {
+      setPurchaseQty(1)
+      return
+    }
+
+    setPurchaseQty((prev) => Math.max(1, Math.min(prev, availableStock)))
+  }, [availableStock])
+
+  function updatePurchaseQty(nextValue) {
+    const parsed = Number.parseInt(nextValue, 10)
+    if (!Number.isFinite(parsed)) {
+      setPurchaseQty(1)
+      return
+    }
+
+    setPurchaseQty(Math.max(1, Math.min(parsed, Math.max(1, availableStock))))
+  }
 
   async function handleUpdate() {
     setSaving(true)
@@ -187,13 +213,13 @@ export default function ProductDetail({ activeMode, onModeChange }) {
   function handleAddToCart() {
     if (!product) return
 
-    const stock = Math.max(0, Number.parseInt(product.stock, 10) || 0)
-    const isOut = !!product.agotado || stock <= 0
-    if (isOut) {
+    if (isOutOfStock) {
       setSaveStatus({ type: 'error', message: 'Producto agotado' })
       setTimeout(() => setSaveStatus(null), 1200)
       return
     }
+
+    const stock = availableStock
 
     const result = addToCart({
       id: product.id,
@@ -204,7 +230,7 @@ export default function ProductDetail({ activeMode, onModeChange }) {
       stock,
       exentoIva: false,
       discountPct: 0,
-    }, 1)
+    }, purchaseQty)
 
     if (!result.ok) {
       setSaveStatus({ type: 'error', message: result.error || 'No se pudo agregar al carrito' })
@@ -212,7 +238,10 @@ export default function ProductDetail({ activeMode, onModeChange }) {
       return
     }
 
-    setSaveStatus({ type: 'success', message: 'Producto agregado al carrito' })
+    setSaveStatus({
+      type: 'success',
+      message: `${purchaseQty} producto${purchaseQty === 1 ? '' : 's'} agregado${purchaseQty === 1 ? '' : 's'} al carrito`,
+    })
     setTimeout(() => setSaveStatus(null), 1200)
   }
 
@@ -331,12 +360,45 @@ export default function ProductDetail({ activeMode, onModeChange }) {
               {product.descripcion && (
                 <p className="product-detail-desc">{product.descripcion}</p>
               )}
-              {(agotado || (Number.parseInt(product.stock, 10) || 0) <= 0) ? (
+              {isOutOfStock ? (
                 <div className="product-detail-status agotado">Este producto está agotado</div>
               ) : (
-                <button className="btn-whatsapp" onClick={handleAddToCart}>
-                  Agregar al carrito
-                </button>
+                <>
+                  <div className="product-qty-panel">
+                    <span>Cantidad</span>
+                    <div className="product-qty-controls">
+                      <button
+                        type="button"
+                        onClick={() => updatePurchaseQty(purchaseQty - 1)}
+                        disabled={purchaseQty <= 1}
+                        aria-label="Disminuir cantidad"
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        min="1"
+                        max={availableStock}
+                        value={purchaseQty}
+                        onChange={(e) => updatePurchaseQty(e.target.value)}
+                        aria-label="Cantidad del producto"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => updatePurchaseQty(purchaseQty + 1)}
+                        disabled={purchaseQty >= availableStock}
+                        aria-label="Aumentar cantidad"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <small>{availableStock} disponible(s)</small>
+                  </div>
+
+                  <button className="btn-whatsapp" onClick={handleAddToCart}>
+                    Agregar al carrito
+                  </button>
+                </>
               )}
               <button className="back-link" onClick={() => navigate('/catalogo')}>
                 ← Volver al catálogo

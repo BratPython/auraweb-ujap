@@ -7,7 +7,7 @@ export default function TypographyEditor({ typography, allFonts, onUpdate }) {
   return (
     <div className="editor-card">
       <h4>Tipografia editable</h4>
-      <p className="admin-note">Solo: Titulos, Subtitulos, Parrafos y Banner (fuente, tamano y espaciado).</p>
+      <p className="admin-note">Solo: Titulos, Subtitulos, Parrafos, Botones y Banner (fuente, tamano y espaciado).</p>
 
       {TYPOGRAPHY_GROUPS.map(({ key, label, minSize, maxSize }) => (
         <div className="text-editor-row" key={key}>
@@ -51,6 +51,23 @@ export default function TypographyEditor({ typography, allFonts, onUpdate }) {
           </div>
         </div>
       ))}
+
+      <div className="text-editor-row">
+        <div className="text-editor-header"><strong>Botones</strong></div>
+        <div className="text-editor-controls stack">
+          <div className="control-line control-line-input">
+            <span>Tamaño</span>
+            <input
+              type="number"
+              min={8}
+              max={140}
+              className="word-select"
+              value={pxToNumber(typography.buttons?.size || typography.paragraphs.size)}
+              onChange={(e) => onUpdate('buttons', 'size', toPx(e.target.value, 8, 140))}
+            />
+          </div>
+        </div>
+      </div>
 
       {/* Banner — special case with larger size range */}
       <div className="text-editor-row">

@@ -17,6 +17,7 @@ export default function CartSideDrawer({ open, onClose }) {
     cartItems,
     subtotal,
     ensurePendingCheckout,
+    removeFromCart,
     clearCart,
   } = useShop()
 
@@ -103,6 +104,18 @@ export default function CartSideDrawer({ open, onClose }) {
                 <p>Cantidad: {item.quantity}</p>
                 <p>${formatMoney((Number(item.price) || 0) * (Number(item.quantity) || 0))}</p>
               </div>
+              <button
+                type="button"
+                className="cart-drawer-item-remove"
+                onClick={() => {
+                  removeFromCart(item.id)
+                  setMessage('')
+                }}
+                aria-label={`Eliminar ${item.name} del carrito`}
+                disabled={creatingOrder}
+              >
+                Eliminar
+              </button>
             </article>
           ))}
         </div>
