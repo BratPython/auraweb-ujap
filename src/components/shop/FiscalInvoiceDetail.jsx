@@ -75,8 +75,8 @@ export default function FiscalInvoiceDetail({ invoice, showPrint = true, onBack,
             </tr>
           </thead>
           <tbody>
-            {invoice.items.map((item) => (
-              <tr key={`${invoice.id}-${item.code}`}>
+            {invoice.items.map((item, index) => (
+              <tr key={`${invoice.id}-${item.code}-${item.description}-${index}`}>
                 <td>{item.code}</td>
                 <td>{item.description}</td>
                 <td>{item.quantity}</td>

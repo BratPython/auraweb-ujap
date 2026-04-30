@@ -106,8 +106,11 @@ function normalizeCartSnapshot(items = []) {
 
       return {
         id,
+        lineKey: String(item?.lineKey || `${id}::default`),
         code: item?.code || `P-${index + 1}`,
         name: item?.name || item?.description || 'Producto',
+        selectedColor: String(item?.selectedColor || '').trim(),
+        colorOptionsCount: Math.max(0, Number(item?.colorOptionsCount) || 0),
         image: String(item?.image || item?.imageUrl || item?.thumbnail || '').trim(),
         price: Number(item?.price ?? item?.unitPrice) || 0,
         stock: Math.max(0, Number(item?.stock) || 0),
@@ -302,9 +305,14 @@ function calculateTotals(cartItems) {
       baseImponibleIva += lineSubtotal
     }
 
+    const selectedColor = String(item.selectedColor || '').trim()
+    const colorOptionsCount = Math.max(0, Number(item.colorOptionsCount) || 0)
+    const lineDescription =
+      colorOptionsCount > 1 && selectedColor ? `${item.name} (${selectedColor})` : item.name
+
     return {
       code: item.code || `P-${index + 1}`,
-      description: item.name,
+      description: lineDescription,
       quantity,
       unitPrice,
       discountPct,
@@ -943,7 +951,10 @@ export function ShopProvider({ children }) {
     }
 
     const nextQty = Math.max(1, Number(quantity) || 1)
-    const existing = cartItems.find((i) => i.id === product.id)
+    const selectedColor = String(product.selectedColor || '').trim()
+    const colorOptionsCount = Math.max(0, Number(product.colorOptionsCount) || 0)
+    const lineKey = `${product.id}::${selectedColor || 'default'}`
+    const existing = cartItems.find((i) => String(i.lineKey || '') === lineKey)
     const existingQty = existing ? existing.quantity : 0
     const finalQty = existingQty + nextQty
 
@@ -953,8 +964,11 @@ export function ShopProvider({ children }) {
 
     const baseItem = {
       id: product.id,
+      lineKey,
       code: product.code,
       name: product.name,
+      selectedColor,
+      colorOptionsCount,
       image: String(product.image || existing?.image || '').trim(),
       price: Number(product.price) || 0,
       stock,
@@ -964,17 +978,33 @@ export function ShopProvider({ children }) {
     }
 
     const nextCart = existing
-      ? cartItems.map((i) => (i.id === product.id ? baseItem : i))
+      ? cartItems.map((i) => (String(i.lineKey || '') === lineKey ? baseItem : i))
       : [...cartItems, baseItem]
 
     persistCart(nextCart)
     return { ok: true }
   }
 
-  function updateCartQuantity(productId, quantity) {
+  function resolveCartItemRef(itemRef) {
+    if (itemRef && typeof itemRef === 'object') {
+      const lineRef = String(itemRef.lineKey || '').trim()
+      if (lineRef) return lineRef
+      return String(itemRef.id || '').trim()
+    }
+    return String(itemRef || '').trim()
+  }
+
+  function updateCartQuantity(itemRef, quantity) {
     const targetQty = Math.max(1, Number(quantity) || 1)
+    const ref = resolveCartItemRef(itemRef)
+    const hasLineMatch = cartItems.some((item) => String(item.lineKey || '') === ref)
+
     const nextCart = cartItems.map((item) => {
-      if (item.id !== productId) return item
+      const matches = hasLineMatch
+        ? String(item.lineKey || '') === ref
+        : String(item.id || '') === ref
+
+      if (!matches) return item
       const safeQty = Math.min(targetQty, item.stock)
       return { ...item, quantity: safeQty }
     })
@@ -982,8 +1012,15 @@ export function ShopProvider({ children }) {
     return { ok: true }
   }
 
-  function removeFromCart(productId) {
-    const nextCart = cartItems.filter((item) => item.id !== productId)
+  function removeFromCart(itemRef) {
+    const ref = resolveCartItemRef(itemRef)
+    if (!ref) return { ok: false, error: 'No se pudo identificar el item a eliminar.' }
+
+    const hasLineMatch = cartItems.some((item) => String(item.lineKey || '') === ref)
+    const nextCart = hasLineMatch
+      ? cartItems.filter((item) => String(item.lineKey || '') !== ref)
+      : cartItems.filter((item) => String(item.id || '') !== ref)
+
     persistCart(nextCart)
     return { ok: true }
   }
@@ -1169,24 +1206,36 @@ export function ShopProvider({ children }) {
 
       if (stockError) throw stockError
 
-      const stockMap = new Map((stockRows || []).map((row) => [row.id, row]))
+      const stockMap = new Map((stockRows || []).map((row) => [String(row.id), row]))
 
-      for (const item of sourceCart) {
-        const row = stockMap.get(item.id)
+      const orderedQtyById = sourceCart.reduce((acc, item) => {
+        const key = String(item.id)
+        acc.set(key, (acc.get(key) || 0) + Math.max(0, Number(item.quantity) || 0))
+        return acc
+      }, new Map())
+
+      for (const [id, requiredQty] of orderedQtyById.entries()) {
+        const row = stockMap.get(id)
         if (!row || row.is_active === false) {
-          return { ok: false, error: `Producto no disponible: ${item.name}` }
+          const missingName = sourceCart.find((item) => String(item.id) === id)?.name || 'Producto'
+          return { ok: false, error: `Producto no disponible: ${missingName}` }
         }
 
         const dbStock = Math.max(0, Number(row.stock) || 0)
-        if (dbStock < item.quantity) {
-          return { ok: false, error: `Stock insuficiente para ${item.name}. Disponible: ${dbStock}` }
+        if (dbStock < requiredQty) {
+          const limitedName = sourceCart.find((item) => String(item.id) === id)?.name || 'Producto'
+          return { ok: false, error: `Stock insuficiente para ${limitedName}. Disponible: ${dbStock}` }
         }
       }
 
-      for (const item of sourceCart) {
-        const row = stockMap.get(item.id)
+      for (const [id, requiredQty] of orderedQtyById.entries()) {
+        const row = stockMap.get(id)
+        if (!row || row.is_active === false) {
+          continue
+        }
+
         const dbStock = Math.max(0, Number(row.stock) || 0)
-        const nextStock = Math.max(0, dbStock - item.quantity)
+        const nextStock = Math.max(0, dbStock - requiredQty)
 
         const { error: updateError } = await supabase
           .from('productos')
@@ -1194,7 +1243,7 @@ export function ShopProvider({ children }) {
             stock: nextStock,
             agotado: nextStock <= 0,
           })
-          .eq('id', item.id)
+          .eq('id', id)
 
         if (updateError) throw updateError
       }

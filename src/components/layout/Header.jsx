@@ -98,10 +98,8 @@ export default function Header({ children, currentPage }) {
             )}
           </nav>
         </div>
-        {/* End of .header-left */}
 
         {children}
-
         {currentUser ? (
           <button
             type="button"

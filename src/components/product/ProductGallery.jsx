@@ -1,7 +1,15 @@
 import React, { useRef } from 'react'
 import ImageWithLoader from '../ui/ImageWithLoader'
 
-export default function ProductGallery({ images, isAdmin = false, uploading = false, onAddImage, onDeleteImage, hideMainImage = false }) {
+export default function ProductGallery({
+  images,
+  isAdmin = false,
+  uploading = false,
+  onAddImage,
+  onDeleteImage,
+  hideMainImage = false,
+  protectFirstImage = true,
+}) {
   const fileInputRef = useRef(null)
 
   return (
@@ -20,7 +28,7 @@ export default function ProductGallery({ images, isAdmin = false, uploading = fa
         {images?.map((imgUrl, i) => (
           <div key={i} className="thumb-container">
             <ImageWithLoader src={imgUrl} alt={`Thumbnail ${i}`} />
-            {isAdmin && i > 0 && (
+            {isAdmin && (!protectFirstImage || i > 0) && (
               <button className="del-thumb-btn" onClick={() => onDeleteImage(i)}>✕</button>
             )}
           </div>

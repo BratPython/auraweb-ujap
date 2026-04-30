@@ -91,7 +91,7 @@ export default function CartSideDrawer({ open, onClose }) {
           {cartItems.length ? null : <p className="shop-note">Aun no agregas productos.</p>}
 
           {cartItems.map((item) => (
-            <article className="cart-drawer-item" key={item.id}>
+            <article className="cart-drawer-item" key={item.lineKey || item.id}>
               <div className="cart-drawer-item-image">
                 {item.image ? (
                   <img src={item.image} alt={item.name} />
@@ -101,6 +101,7 @@ export default function CartSideDrawer({ open, onClose }) {
               </div>
               <div className="cart-drawer-item-info">
                 <strong>{item.name}</strong>
+                {item.selectedColor ? <p>Color: {item.selectedColor}</p> : null}
                 <p>Cantidad: {item.quantity}</p>
                 <p>${formatMoney((Number(item.price) || 0) * (Number(item.quantity) || 0))}</p>
               </div>
@@ -108,10 +109,10 @@ export default function CartSideDrawer({ open, onClose }) {
                 type="button"
                 className="cart-drawer-item-remove"
                 onClick={() => {
-                  removeFromCart(item.id)
+                  removeFromCart(item)
                   setMessage('')
                 }}
-                aria-label={`Eliminar ${item.name} del carrito`}
+                aria-label={`Eliminar ${item.name}${item.selectedColor ? ` (${item.selectedColor})` : ''} del carrito`}
                 disabled={creatingOrder}
               >
                 Eliminar

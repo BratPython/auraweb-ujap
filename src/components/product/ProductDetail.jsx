@@ -12,6 +12,25 @@ import { useBcvRate } from '../../hooks/useBcvRate'
 import ConfirmModal from '../layout/ConfirmModal'
 import { useShop } from '../../hooks/useShop'
 
+function normalizeColorVariants(rawVariants) {
+  if (!Array.isArray(rawVariants)) return []
+
+  return rawVariants
+    .map((variant, index) => {
+      const id = String(variant?.id || `color-${index + 1}`).trim()
+      const name = String(variant?.name || '').trim()
+      const swatch = String(variant?.swatch || '#d8d8d8').trim() || '#d8d8d8'
+      const images = Array.isArray(variant?.images)
+        ? variant.images.map((url) => String(url || '').trim()).filter(Boolean)
+        : []
+
+      if (!id) return null
+
+      return { id, name, swatch, images }
+    })
+    .filter(Boolean)
+}
+
 export default function ProductDetail({ activeMode, onModeChange }) {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -35,6 +54,10 @@ export default function ProductDetail({ activeMode, onModeChange }) {
   const [editStock, setEditStock] = useState('0')
   const [agotado, setAgotado] = useState(false)
   const [purchaseQty, setPurchaseQty] = useState(1)
+  const [colorVariants, setColorVariants] = useState([])
+  const [activeAdminVariantId, setActiveAdminVariantId] = useState('')
+  const [selectedCustomerColorId, setSelectedCustomerColorId] = useState('')
+  const [variantImageUploading, setVariantImageUploading] = useState(false)
 
   const discount = Math.max(0, Math.min(99, Number.parseInt(product?.is_descuento, 10) || 0))
   const basePrice = Number.parseFloat(product?.precio) || 0
@@ -44,6 +67,15 @@ export default function ProductDetail({ activeMode, onModeChange }) {
   const convertedPriceVes = bcvRate ? finalPrice * bcvRate : null
   const availableStock = Math.max(0, Number.parseInt(product?.stock, 10) || 0)
   const isOutOfStock = !!product?.agotado || availableStock <= 0
+  const customerColorVariants = colorVariants.filter((variant) => variant.name)
+  const selectedCustomerVariant = customerColorVariants.find((variant) => variant.id === selectedCustomerColorId)
+    || customerColorVariants[0]
+    || null
+  const activeAdminVariant = colorVariants.find((variant) => variant.id === activeAdminVariantId) || null
+  const hasMultipleColors = customerColorVariants.length > 1
+  const galleryImages = !adminMode && selectedCustomerVariant?.images?.length
+    ? selectedCustomerVariant.images
+    : (product?.imagenes || [])
 
   const formatPrice = (value) => {
     const num = Number(value) || 0
@@ -71,6 +103,11 @@ export default function ProductDetail({ activeMode, onModeChange }) {
         setEditDiscount(String(Math.max(0, Math.min(99, Number.parseInt(data.is_descuento, 10) || 0))))
         setEditStock(String(Math.max(0, Number.parseInt(data.stock, 10) || 0)))
         setAgotado(!!data.agotado)
+
+        const loadedVariants = normalizeColorVariants(data?.theme_config?.colorVariants)
+        setColorVariants(loadedVariants)
+        setActiveAdminVariantId(loadedVariants[0]?.id || '')
+        setSelectedCustomerColorId(loadedVariants[0]?.id || '')
       } catch (err) {
         console.error('Error fetching product details:', err)
         setSaveStatus({ type: 'error', message: 'Producto no encontrado' })
@@ -97,6 +134,39 @@ export default function ProductDetail({ activeMode, onModeChange }) {
 
     setPurchaseQty((prev) => Math.max(1, Math.min(prev, availableStock)))
   }, [availableStock])
+
+  useEffect(() => {
+    if (!customerColorVariants.length) {
+      setSelectedCustomerColorId('')
+      return
+    }
+
+    const selectedExists = customerColorVariants.some((variant) => variant.id === selectedCustomerColorId)
+    if (!selectedExists) {
+      setSelectedCustomerColorId(customerColorVariants[0].id)
+    }
+  }, [customerColorVariants, selectedCustomerColorId])
+
+  useEffect(() => {
+    if (!colorVariants.length) {
+      setActiveAdminVariantId('')
+      return
+    }
+
+    const activeExists = colorVariants.some((variant) => variant.id === activeAdminVariantId)
+    if (!activeExists) {
+      setActiveAdminVariantId(colorVariants[0].id)
+    }
+  }, [activeAdminVariantId, colorVariants])
+
+  useEffect(() => {
+    if (!galleryImages.length) {
+      setMainIdx(0)
+      return
+    }
+
+    setMainIdx((prev) => Math.min(prev, galleryImages.length - 1))
+  }, [galleryImages])
 
   function updatePurchaseQty(nextValue) {
     const parsed = Number.parseInt(nextValue, 10)
@@ -140,23 +210,49 @@ export default function ProductDetail({ activeMode, onModeChange }) {
     }
   }
 
+  async function uploadImageToStorage(file) {
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Date.now()}_img.${fileExt}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('recursos_aura')
+      .upload(fileName, file)
+
+    if (uploadError) throw uploadError
+
+    const { data: urlData } = supabase.storage
+      .from('recursos_aura')
+      .getPublicUrl(fileName)
+
+    return urlData.publicUrl
+  }
+
+  async function saveColorVariants(nextVariants) {
+    const normalizedVariants = normalizeColorVariants(nextVariants)
+    const currentThemeConfig = product?.theme_config && typeof product.theme_config === 'object'
+      ? product.theme_config
+      : {}
+
+    const nextThemeConfig = {
+      ...currentThemeConfig,
+      colorVariants: normalizedVariants,
+    }
+
+    const { error } = await supabase
+      .from('productos')
+      .update({ theme_config: nextThemeConfig })
+      .eq('id', id)
+
+    if (error) throw error
+
+    setColorVariants(normalizedVariants)
+    setProduct((prev) => (prev ? { ...prev, theme_config: nextThemeConfig } : prev))
+  }
+
   async function handleAddImage(file) {
     setImageUploading(true)
     try {
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Date.now()}_img.${fileExt}`
-
-      const { error: uploadError } = await supabase.storage
-        .from('recursos_aura')
-        .upload(fileName, file)
-
-      if (uploadError) throw uploadError
-
-      const { data: urlData } = supabase.storage
-        .from('recursos_aura')
-        .getPublicUrl(fileName)
-
-      const newImageUrl = urlData.publicUrl
+      const newImageUrl = await uploadImageToStorage(file)
       const currentImages = product.imagenes || []
       const nextImages = [...currentImages, newImageUrl]
 
@@ -176,6 +272,105 @@ export default function ProductDetail({ activeMode, onModeChange }) {
       setTimeout(() => setImageUploadModal(null), 1000)
     } finally {
       setImageUploading(false)
+    }
+  }
+
+  async function handleAddColorVariant() {
+    try {
+      const nextVariantId = crypto.randomUUID()
+      const nextVariants = [
+        ...colorVariants,
+        {
+          id: nextVariantId,
+          name: `Color ${colorVariants.length + 1}`,
+          swatch: '#d8d8d8',
+          images: [],
+        },
+      ]
+
+      await saveColorVariants(nextVariants)
+      setActiveAdminVariantId(nextVariantId)
+      setSaveStatus({ type: 'success', message: 'Color agregado' })
+      setTimeout(() => setSaveStatus(null), 1200)
+    } catch (error) {
+      console.error('Error agregando color:', error)
+      setSaveStatus({ type: 'error', message: 'No se pudo agregar el color' })
+      setTimeout(() => setSaveStatus(null), 1200)
+    }
+  }
+
+  async function handleUpdateColorVariant(variantId, patch) {
+    const nextVariants = colorVariants.map((variant) =>
+      variant.id === variantId ? { ...variant, ...patch } : variant
+    )
+
+    setColorVariants(nextVariants)
+    try {
+      await saveColorVariants(nextVariants)
+    } catch (error) {
+      console.error('Error actualizando color:', error)
+      setSaveStatus({ type: 'error', message: 'No se pudo actualizar el color' })
+      setTimeout(() => setSaveStatus(null), 1200)
+      setColorVariants(colorVariants)
+    }
+  }
+
+  async function handleRemoveColorVariant(variantId) {
+    try {
+      const nextVariants = colorVariants.filter((variant) => variant.id !== variantId)
+      await saveColorVariants(nextVariants)
+      if (activeAdminVariantId === variantId) {
+        setActiveAdminVariantId(nextVariants[0]?.id || '')
+      }
+      setSaveStatus({ type: 'success', message: 'Color eliminado' })
+      setTimeout(() => setSaveStatus(null), 1200)
+    } catch (error) {
+      console.error('Error eliminando color:', error)
+      setSaveStatus({ type: 'error', message: 'No se pudo eliminar el color' })
+      setTimeout(() => setSaveStatus(null), 1200)
+    }
+  }
+
+  async function handleAddColorVariantImage(variantId, file) {
+    if (!file) return
+
+    setVariantImageUploading(true)
+    try {
+      const imageUrl = await uploadImageToStorage(file)
+      const nextVariants = colorVariants.map((variant) => {
+        if (variant.id !== variantId) return variant
+        return { ...variant, images: [...variant.images, imageUrl] }
+      })
+
+      await saveColorVariants(nextVariants)
+      setImageUploadModal({ type: 'success', message: 'Imagen de color cargada correctamente' })
+      setTimeout(() => setImageUploadModal(null), 1200)
+    } catch (error) {
+      console.error('Error cargando imagen de color:', error)
+      setImageUploadModal({ type: 'error', message: 'No se pudo cargar la imagen del color' })
+      setTimeout(() => setImageUploadModal(null), 1200)
+    } finally {
+      setVariantImageUploading(false)
+    }
+  }
+
+  async function handleDeleteColorVariantImage(variantId, imageIndex) {
+    try {
+      const nextVariants = colorVariants.map((variant) => {
+        if (variant.id !== variantId) return variant
+        return {
+          ...variant,
+          images: variant.images.filter((_, index) => index !== imageIndex),
+        }
+      })
+
+      await saveColorVariants(nextVariants)
+      setImageUploadModal({ type: 'success', message: 'Imagen de color eliminada correctamente' })
+      setTimeout(() => setImageUploadModal(null), 1200)
+    } catch (error) {
+      console.error('Error eliminando imagen de color:', error)
+      setImageUploadModal({ type: 'error', message: 'No se pudo eliminar la imagen del color' })
+      setTimeout(() => setImageUploadModal(null), 1200)
     }
   }
 
@@ -225,7 +420,9 @@ export default function ProductDetail({ activeMode, onModeChange }) {
       id: product.id,
       code: `PRD-${String(product.id).slice(0, 8)}`,
       name: product.nombre,
-      image: Array.isArray(product.imagenes) ? String(product.imagenes[0] || '') : '',
+      selectedColor: hasMultipleColors ? (selectedCustomerVariant?.name || '') : '',
+      colorOptionsCount: customerColorVariants.length,
+      image: Array.isArray(galleryImages) ? String(galleryImages[0] || '') : '',
       price: finalPrice,
       stock,
       exentoIva: false,
@@ -240,7 +437,7 @@ export default function ProductDetail({ activeMode, onModeChange }) {
 
     setSaveStatus({
       type: 'success',
-      message: `${purchaseQty} producto${purchaseQty === 1 ? '' : 's'} agregado${purchaseQty === 1 ? '' : 's'} al carrito`,
+      message: `${purchaseQty} producto${purchaseQty === 1 ? '' : 's'} agregado${purchaseQty === 1 ? '' : 's'} al carrito${hasMultipleColors && selectedCustomerVariant?.name ? ` (${selectedCustomerVariant.name})` : ''}`,
     })
     setTimeout(() => setSaveStatus(null), 1200)
   }
@@ -258,39 +455,39 @@ export default function ProductDetail({ activeMode, onModeChange }) {
           {/* Gallery */}
           <div className="product-gallery">
             <div className="main-image">
-              {product.imagenes && product.imagenes.length > 0 ? (
-                <ImageWithLoader src={product.imagenes[mainIdx] || product.imagenes[0]} alt={product.nombre} />
+              {galleryImages && galleryImages.length > 0 ? (
+                <ImageWithLoader src={galleryImages[mainIdx] || galleryImages[0]} alt={product.nombre} />
               ) : (
                 <div className="placeholder-detail">🖼️ Sin Foto</div>
               )}
-              {product.imagenes && product.imagenes.length > 1 ? (
+              {galleryImages && galleryImages.length > 1 ? (
                 <>
                   <button
                     className="gallery-arrow left"
-                    onClick={() => setMainIdx((prev) => (prev - 1 + product.imagenes.length) % product.imagenes.length)}
+                    onClick={() => setMainIdx((prev) => (prev - 1 + galleryImages.length) % galleryImages.length)}
                     aria-label="Anterior"
                   >
                     ‹
                   </button>
                   <button
                     className="gallery-arrow right"
-                    onClick={() => setMainIdx((prev) => (prev + 1) % product.imagenes.length)}
+                    onClick={() => setMainIdx((prev) => (prev + 1) % galleryImages.length)}
                     aria-label="Siguiente"
                   >
                     ›
                   </button>
                 </>
               ) : null}
-              {agotado && (
+              {isOutOfStock && (
                 <div className="detail-agotado-overlay">
                   <span className="detail-agotado-badge">Agotado</span>
                 </div>
               )}
             </div>
 
-            {product.imagenes && product.imagenes.length > 1 && (
+            {galleryImages && galleryImages.length > 1 && (
               <div className="thumbnail-strip">
-                {product.imagenes.map((imgUrl, i) => (
+                {galleryImages.map((imgUrl, i) => (
                   <div
                     key={i}
                     className={`thumb-container ${mainIdx === i ? 'thumb-active' : ''}`}
@@ -317,24 +514,106 @@ export default function ProductDetail({ activeMode, onModeChange }) {
 
           {/* Info / Editor panel */}
           {adminMode ? (
-            <ProductEditor
-              isAdmin
-              editName={editName}
-              setEditName={setEditName}
-              editDesc={editDesc}
-              setEditDesc={setEditDesc}
-              editPrice={editPrice}
-              setEditPrice={setEditPrice}
-              editDiscount={editDiscount}
-              setEditDiscount={setEditDiscount}
-              editStock={editStock}
-              setEditStock={setEditStock}
-              agotado={agotado}
-              setAgotado={setAgotado}
-              subcategoria={product.subcategoria}
-              saving={saving}
-              onSave={handleUpdate}
-            />
+            <div className="product-admin-stack">
+              <ProductEditor
+                isAdmin
+                editName={editName}
+                setEditName={setEditName}
+                editDesc={editDesc}
+                setEditDesc={setEditDesc}
+                editPrice={editPrice}
+                setEditPrice={setEditPrice}
+                editDiscount={editDiscount}
+                setEditDiscount={setEditDiscount}
+                editStock={editStock}
+                setEditStock={setEditStock}
+                agotado={agotado}
+                setAgotado={setAgotado}
+                subcategoria={product.subcategoria}
+                saving={saving}
+                onSave={handleUpdate}
+              />
+
+              <section className="product-color-admin-panel">
+                <div className="product-color-admin-head">
+                  <h3>Colores del producto</h3>
+                  <button type="button" className="btn btn-sm" onClick={() => void handleAddColorVariant()}>
+                    + Agregar color
+                  </button>
+                </div>
+
+                {colorVariants.length ? (
+                  <div className="product-color-admin-list">
+                    {colorVariants.map((variant) => (
+                      <article
+                        key={variant.id}
+                        className={`product-color-admin-item${variant.id === activeAdminVariantId ? ' active' : ''}`}
+                      >
+                        <input
+                          type="color"
+                          value={variant.swatch || '#d8d8d8'}
+                          onChange={(e) => {
+                            void handleUpdateColorVariant(variant.id, { swatch: e.target.value })
+                          }}
+                          aria-label={`Color visual para ${variant.name || variant.id}`}
+                        />
+
+                        <input
+                          type="text"
+                          className="product-color-name-input"
+                          value={variant.name}
+                          placeholder="Nombre del color"
+                          onChange={(e) => {
+                            void handleUpdateColorVariant(variant.id, { name: e.target.value })
+                          }}
+                        />
+
+                        <button
+                          type="button"
+                          className="btn btn-sm"
+                          onClick={() => setActiveAdminVariantId(variant.id)}
+                        >
+                          Imagenes
+                        </button>
+
+                        <button
+                          type="button"
+                          className="btn btn-sm"
+                          onClick={() => {
+                            void handleRemoveColorVariant(variant.id)
+                          }}
+                        >
+                          Eliminar
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="shop-note">Aun no hay colores configurados para este producto.</p>
+                )}
+
+                {activeAdminVariant ? (
+                  <div className="product-color-images-panel">
+                    <p className="shop-note">
+                      Imagenes para: <strong>{activeAdminVariant.name || 'Color sin nombre'}</strong>
+                    </p>
+
+                    <ProductGallery
+                      images={activeAdminVariant.images}
+                      isAdmin
+                      uploading={variantImageUploading}
+                      onAddImage={(file) => {
+                        void handleAddColorVariantImage(activeAdminVariant.id, file)
+                      }}
+                      onDeleteImage={(imageIndex) => {
+                        void handleDeleteColorVariantImage(activeAdminVariant.id, imageIndex)
+                      }}
+                      protectFirstImage={false}
+                    />
+                  </div>
+                ) : null}
+              </section>
+            </div>
           ) : (
             <div className="product-info-panel">
               <span className="product-detail-sub">{product.subcategoria}</span>
@@ -360,6 +639,33 @@ export default function ProductDetail({ activeMode, onModeChange }) {
               {product.descripcion && (
                 <p className="product-detail-desc">{product.descripcion}</p>
               )}
+
+              {customerColorVariants.length ? (
+                <div className="product-color-picker">
+                  <span>Color</span>
+                  <div className="product-color-options">
+                    {customerColorVariants.map((variant) => {
+                      const isSelected = selectedCustomerVariant?.id === variant.id
+                      return (
+                        <button
+                          key={variant.id}
+                          type="button"
+                          className={`product-color-option${isSelected ? ' active' : ''}`}
+                          onClick={() => setSelectedCustomerColorId(variant.id)}
+                          title={variant.name || 'Color'}
+                        >
+                          <span
+                            className="product-color-swatch"
+                            style={{ background: variant.swatch || '#d8d8d8' }}
+                          />
+                          <small>{variant.name || 'Color'}</small>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              ) : null}
+
               {isOutOfStock ? (
                 <div className="product-detail-status agotado">Este producto está agotado</div>
               ) : (
@@ -427,12 +733,12 @@ export default function ProductDetail({ activeMode, onModeChange }) {
         </div>
       ) : null}
 
-      {imageUploading ? (
+      {imageUploading || variantImageUploading ? (
         <div className="status-modal-overlay">
           <div className="status-modal-card">
             <div className="uploading-state" style={{ padding: '8px 8px 2px' }}>
               <div className="spinner"></div>
-              <h2>Cargando foto...</h2>
+              <h2>{variantImageUploading ? 'Cargando foto del color...' : 'Cargando foto...'}</h2>
               <p>Por favor no cierres esta ventana.</p>
             </div>
           </div>
