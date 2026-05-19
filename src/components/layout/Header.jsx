@@ -6,10 +6,12 @@ import { supabase } from '../../supabaseClient'
 import { useAdminMode } from '../../hooks/useAdminMode'
 import { useShop } from '../../hooks/useShop'
 import CartSideDrawer from '../shop/CartSideDrawer'
+import VideoSettingsModal from '../admin/VideoSettingsModal'
 
 export default function Header({ children, currentPage }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [cartOpen, setCartOpen] = useState(false)
+  const [videoModalOpen, setVideoModalOpen] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   const navigate = useNavigate()
   const { isAdmin, adminMode, setAdminMode } = useAdminMode()
@@ -65,6 +67,7 @@ export default function Header({ children, currentPage }) {
             <button type="button" onClick={() => navigate('/admin/factura')}>Factura</button>
             <button type="button" onClick={() => navigate('/admin/pedidos')}>Pedidos</button>
             <button type="button" onClick={() => navigate('/admin/cupones')}>Cupones</button>
+            <button type="button" onClick={() => setVideoModalOpen(true)}>Video</button>
             <button type="button" className="danger" onClick={handleAdminLogout} disabled={loggingOut}>
               {loggingOut ? 'Saliendo...' : 'Salir'}
             </button>
@@ -163,6 +166,7 @@ export default function Header({ children, currentPage }) {
       </header>
 
       <CartSideDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
+      <VideoSettingsModal open={videoModalOpen} onClose={() => setVideoModalOpen(false)} />
     </>
   )
 }

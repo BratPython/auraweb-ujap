@@ -3,6 +3,7 @@ import Header from '../layout/Header'
 import Footer from '../layout/Footer'
 import ThemeSelector from '../ui/ThemeSelector'
 import HeroSection from './HeroSection'
+import VideoPlayerSection from './VideoPlayerSection'
 import DiscoverSection from './DiscoverSection'
 import ServicesSection from './ServicesSection'
 import CatalogCta from './CatalogCta'
@@ -15,6 +16,7 @@ export default function Landing({ activeMode, onModeChange }) {
       </Header>
 
       <HeroSection />
+      <VideoPlayerSection />
       <DiscoverSection />
       <CatalogCta />
       <ServicesSection />
