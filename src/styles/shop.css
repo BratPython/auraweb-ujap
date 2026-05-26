@@ -780,3 +780,21 @@
     padding: 0;
   }
 }
+
+/* Customer data grid */
+.customer-data-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.customer-data-grid .form-group {
+  margin-bottom: 0;
+}
+
+@media (max-width: 480px) {
+  .customer-data-grid {
+    grid-template-columns: 1fr;
+  }
+}

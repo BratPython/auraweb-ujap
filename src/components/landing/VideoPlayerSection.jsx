@@ -161,10 +161,10 @@ export default function VideoPlayerSection() {
     { value: 'original', label: 'Audio Original' },
   ]
   if (settings.audio_track_1_url) {
-    audioOptions.push({ value: 'audio1', label: settings.subtitles_track_1_name || 'Audio Track 1' })
+    audioOptions.push({ value: 'audio1', label: 'Audio Track 1' })
   }
   if (settings.audio_track_2_url) {
-    audioOptions.push({ value: 'audio2', label: settings.subtitles_track_2_name || 'Audio Track 2' })
+    audioOptions.push({ value: 'audio2', label: 'Audio Track 2' })
   }
 
   return (
@@ -178,14 +178,29 @@ export default function VideoPlayerSection() {
           muted={audioTrack !== 'original'}
           preload="metadata"
           playsInline
+          crossOrigin="anonymous"
           style={{ width: '100%', display: 'block', borderRadius: '8px 8px 0 0' }}
           onClick={togglePlay}
         >
-          {activeSubtitle === 'sub1' && settings.subtitles_track_1_url ? (
-            <track kind="subtitles" src={settings.subtitles_track_1_url} srcLang="es" label={settings.subtitles_track_1_name || 'Subtítulos 1'} default />
+          {settings.subtitles_track_1_url ? (
+            <track
+              key={`sub1-${activeSubtitle}`}
+              kind="subtitles"
+              src={settings.subtitles_track_1_url}
+              srcLang="es"
+              label={settings.subtitles_track_1_name || 'Subtítulos 1'}
+              default={activeSubtitle === 'sub1'}
+            />
           ) : null}
-          {activeSubtitle === 'sub2' && settings.subtitles_track_2_url ? (
-            <track kind="subtitles" src={settings.subtitles_track_2_url} srcLang="en" label={settings.subtitles_track_2_name || 'Subtítulos 2'} default />
+          {settings.subtitles_track_2_url ? (
+            <track
+              key={`sub2-${activeSubtitle}`}
+              kind="subtitles"
+              src={settings.subtitles_track_2_url}
+              srcLang="en"
+              label={settings.subtitles_track_2_name || 'Subtítulos 2'}
+              default={activeSubtitle === 'sub2'}
+            />
           ) : null}
         </video>
 

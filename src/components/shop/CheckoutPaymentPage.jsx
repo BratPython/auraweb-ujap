@@ -150,6 +150,24 @@ export default function CheckoutPaymentPage() {
   const [error, setError] = useState('')
   const [status, setStatus] = useState('')
 
+  const [customerType, setCustomerType] = useState('')
+  const [legalName, setLegalName] = useState('')
+  const [docType, setDocType] = useState('')
+  const [docNumber, setDocNumber] = useState('')
+  const [fiscalAddress, setFiscalAddress] = useState('')
+  const [phone, setPhone] = useState('')
+
+  useEffect(() => {
+    if (currentUser) {
+      setCustomerType(currentUser.customerType || 'Natural')
+      setLegalName(currentUser.legalName || '')
+      setDocType(currentUser.docType || 'V')
+      setDocNumber(currentUser.docNumber || '')
+      setFiscalAddress(currentUser.fiscalAddress || '')
+      setPhone(currentUser.phone || '')
+    }
+  }, [currentUser])
+
   const checkoutCartItems = useMemo(() => {
     if (Array.isArray(pendingCheckout?.cartSnapshot)) {
       return pendingCheckout.cartSnapshot
@@ -528,6 +546,14 @@ export default function CheckoutPaymentPage() {
         paymentBreakdown,
         coupon: effectiveCoupon,
         cartData: checkoutCartItems,
+        customerData: {
+          customerType,
+          legalName,
+          docType,
+          docNumber,
+          fiscalAddress,
+          phone,
+        },
       })
 
       if (!result.ok) {
@@ -643,6 +669,68 @@ export default function CheckoutPaymentPage() {
               ) : null}
             </div>
             {couponFeedback ? <p className="shop-note">{couponFeedback}</p> : null}
+          </div>
+
+          <div className="shop-payment-block">
+            <h3>Datos del cliente</h3>
+            <p className="shop-note" style={{ marginBottom: '12px' }}>
+              Verifica tus datos. Puedes modificarlos si son distintos a los de tu perfil.
+            </p>
+            <div className="customer-data-grid">
+              <div className="form-group">
+                <label>Tipo de persona</label>
+                <select value={customerType} onChange={e => setCustomerType(e.target.value)}>
+                  <option value="Natural">Natural</option>
+                  <option value="Juridico">Juridico</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Tipo de documento</label>
+                <select value={docType} onChange={e => setDocType(e.target.value)}>
+                  <option value="V">V</option>
+                  <option value="E">E</option>
+                  <option value="J">J</option>
+                  <option value="G">G</option>
+                  <option value="P">P</option>
+                </select>
+              </div>
+              <div className="form-group" style={{ gridColumn: customerType === 'Juridico' ? '1 / -1' : undefined }}>
+                <label>{customerType === 'Juridico' ? 'Razón Social' : 'Nombre completo'}</label>
+                <input
+                  type="text"
+                  value={legalName}
+                  onChange={e => setLegalName(e.target.value)}
+                  placeholder={customerType === 'Juridico' ? 'Razón Social' : 'Nombre completo'}
+                />
+              </div>
+              <div className="form-group">
+                <label>Número de documento</label>
+                <input
+                  type="text"
+                  value={docNumber}
+                  onChange={e => setDocNumber(e.target.value)}
+                  placeholder="Número de documento"
+                />
+              </div>
+              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                <label>Dirección fiscal</label>
+                <input
+                  type="text"
+                  value={fiscalAddress}
+                  onChange={e => setFiscalAddress(e.target.value)}
+                  placeholder="Dirección fiscal"
+                />
+              </div>
+              <div className="form-group">
+                <label>Teléfono</label>
+                <input
+                  type="text"
+                  value={phone}
+                  onChange={e => setPhone(e.target.value)}
+                  placeholder="Teléfono"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="checkout-gateway-metrics">

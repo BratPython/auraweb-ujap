@@ -5,8 +5,8 @@ CREATE TABLE IF NOT EXISTS landing_video_settings (
   audio_track_2_url    text,
   subtitles_track_1_url text,
   subtitles_track_2_url text,
-  subtitles_track_1_name text DEFAULT 'Audio 1',
-  subtitles_track_2_name text DEFAULT 'Audio 2',
+  subtitles_track_1_name text DEFAULT 'Subtítulos 1',
+  subtitles_track_2_name text DEFAULT 'Subtítulos 2',
   is_enabled boolean DEFAULT false,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()

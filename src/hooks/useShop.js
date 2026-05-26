@@ -1066,6 +1066,7 @@ export function ShopProvider({ children }) {
     checkoutSessionId = null,
     checkoutSnapshot = null,
     cartData = null,
+    customerData = null,
   } = {}) {
     if (!currentUser) {
       return { ok: false, error: 'Debes iniciar sesión para facturar.' }
@@ -1288,10 +1289,13 @@ export function ShopProvider({ children }) {
       fecha: formatSeniatDate(now),
       hora: formatSeniatTime(now),
       client: {
-        tipoCliente: currentUser.customerType,
-        nombreORazonSocial: currentUser.legalName,
-        domicilioFiscal: currentUser.fiscalAddress,
-        identificacion: `${currentUser.docType}-${currentUser.docNumber}`,
+        tipoCliente: customerData?.customerType || currentUser.customerType,
+        nombreORazonSocial: customerData?.legalName || currentUser.legalName,
+        domicilioFiscal: customerData?.fiscalAddress || currentUser.fiscalAddress,
+        identificacion: customerData
+          ? `${customerData.docType || ''}-${customerData.docNumber || ''}`
+          : `${currentUser.docType}-${currentUser.docNumber}`,
+        telefono: customerData?.phone || currentUser.phone || '',
       },
       items: totals.lineItems,
       totals,
