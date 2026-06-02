@@ -35,6 +35,9 @@ importers:
       react-router-dom:
         specifier: ^6.14.1
         version: 6.30.3(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      three:
+        specifier: ^0.184.0
+        version: 0.184.0
     devDependencies:
       '@eslint/js':
         specifier: ^9.39.1
@@ -1118,6 +1121,9 @@ packages:
   text-segmentation@1.0.3:
     resolution: {integrity: sha512-iOiPUo/BGnZ6+54OsWxZidGCsdU8YbE4PSpdPinp7DeMtUJNJBoJ/ouUSTJjHkh1KntHaltHl/gDs2FC4i5+Nw==}
 
+  three@0.184.0:
+    resolution: {integrity: sha512-wtTRjG92pM5eUg/KuUnHsqSAlPM296brTOcLgMRqEeylYTh/CdtvKUvCyyCQTzFuStieWxvZb8mVTMvdPyUpxg==}
+
   tinyglobby@0.2.16:
     resolution: {integrity: sha512-pn99VhoACYR8nFHhxqix+uvsbXineAasWm5ojXoN8xEwK5Kd3/TrhNn1wByuD52UxWRLy8pu+kRMniEi6Eq9Zg==}
     engines: {node: '>=12.0.0'}
@@ -2191,6 +2197,8 @@ snapshots:
     dependencies:
       utrie: 1.0.2
     optional: true
+
+  three@0.184.0: {}
 
   tinyglobby@0.2.16:
     dependencies:

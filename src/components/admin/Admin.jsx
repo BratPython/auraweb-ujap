@@ -422,6 +422,37 @@ export default function Admin({ themeSettings, setThemeSettings, activeMode, onM
             </p>
           </div>
 
+          <div className="editor-card">
+            <h4>Pantalla de carga</h4>
+            <p className="admin-note" style={{ marginBottom: 12 }}>
+              Muestra animacion de tangram 3D durante 5 segundos al cargar la pagina.
+            </p>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                cursor: 'pointer',
+                fontSize: 'var(--size-body)',
+                fontFamily: 'var(--font-body)',
+                color: 'var(--color-body)',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={themeSettings?.tangramLoader !== false}
+                onChange={() =>
+                  setThemeSettings((prev) => ({
+                    ...prev,
+                    tangramLoader: prev?.tangramLoader === false,
+                  }))
+                }
+                style={{ width: 20, height: 20, accentColor: 'var(--accent)', cursor: 'pointer' }}
+              />
+              Activar tangram 3D
+            </label>
+          </div>
+
           <PaletteManager
             themeSettings={themeSettings}
             editingCategory={editingCategory}
@@ -464,9 +495,10 @@ export default function Admin({ themeSettings, setThemeSettings, activeMode, onM
               onRemove={requestRemoveCustomFont}
             />
           </div>
-        </div>
 
-        <div className="preview-panel scroller" style={{ height: 'calc(100vh - 48px)', padding: '0 8px 0 0' }}>
+          </div>
+
+          <div className="preview-panel scroller" style={{ height: 'calc(100vh - 48px)', padding: '0 8px 0 0' }}>
           <div className="editor-card" style={{ marginBottom: 12 }}>
             <h4>Vista previa de pagina</h4>
             <p className="admin-note">Esta vista usa la paleta en edicion y la tipografia configurada.</p>

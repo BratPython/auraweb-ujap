@@ -7,6 +7,7 @@ import { registerFont } from '../utils/fonts'
 const GLOBAL_THEME_ID = 'global'
 const SAVE_DEBOUNCE_MS = 350
 const THEME_CACHE_KEY = 'aura:themeSettingsCache'
+const MODE_CACHE_KEY = 'aura:activeMode'
 
 function readCachedThemeSettings() {
   try {
@@ -25,6 +26,22 @@ function writeCachedThemeSettings(settings) {
     localStorage.setItem(THEME_CACHE_KEY, JSON.stringify(settings))
   } catch {
     // Ignore local storage failures.
+  }
+}
+
+function readCachedMode() {
+  try {
+    return localStorage.getItem(MODE_CACHE_KEY) || 'light'
+  } catch {
+    return 'light'
+  }
+}
+
+function writeCachedMode(mode) {
+  try {
+    localStorage.setItem(MODE_CACHE_KEY, mode)
+  } catch {
+    // Ignore
   }
 }
 
@@ -79,9 +96,14 @@ function pickBlackOrWhiteByContrast(bgColor) {
 export function useTheme() {
   const initialTheme = readCachedThemeSettings() || FALLBACK_STATE
   const [themeSettings, setThemeSettings] = useState(initialTheme)
-  const [activeMode, setActiveMode] = useState('light')
+  const [activeMode, setActiveMode] = useState(readCachedMode())
   const [hasHydratedTheme, setHasHydratedTheme] = useState(false)
   const lastLoadedRef = useRef(JSON.stringify(initialTheme))
+
+  // Persist activeMode to localStorage
+  useEffect(() => {
+    writeCachedMode(activeMode)
+  }, [activeMode])
 
   // Fetch theme from Supabase on mount
   useEffect(() => {

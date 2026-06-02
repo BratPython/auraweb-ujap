@@ -90,4 +90,5 @@ export const FALLBACK_STATE = {
     colorblind: 'colorblind-default',
   },
   typography: { ...DEFAULT_TYPOGRAPHY },
+  tangramLoader: true,
 }

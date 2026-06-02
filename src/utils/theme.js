@@ -96,6 +96,7 @@ export function normalizeThemeSettings(raw) {
       palettesByMode: { light, dark, colorblind },
       activePaletteIds,
       typography: mergeTypography(raw.typography),
+      tangramLoader: raw.tangramLoader !== false,
     }
   }
 

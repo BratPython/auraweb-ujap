@@ -24,14 +24,26 @@ import './styles/index.css'
 
 const LOADING_DURATION = 5000
 
+function getTangramLoaderSetting() {
+  try {
+    const raw = localStorage.getItem('aura:themeSettingsCache')
+    if (!raw) return true
+    const parsed = JSON.parse(raw)
+    return parsed?.tangramLoader !== false
+  } catch {
+    return true
+  }
+}
+
 function AppRoutes() {
   const { themeSettings, setThemeSettings, activeMode, setActiveMode } = useTheme()
-  const [showLoader, setShowLoader] = useState(true)
+  const [showLoader, setShowLoader] = useState(getTangramLoaderSetting())
 
   useEffect(() => {
+    if (!showLoader) return
     const timer = setTimeout(() => setShowLoader(false), LOADING_DURATION)
     return () => clearTimeout(timer)
-  }, [])
+  }, [showLoader])
 
   if (showLoader) {
     return <TangramLoader />

@@ -648,9 +648,9 @@
   color: #fff;
   border: none;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  font-size: 16px;
+  width: clamp(36px, 10vw, 48px);
+  height: clamp(36px, 10vw, 48px);
+  font-size: clamp(14px, 4vw, 20px);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -674,19 +674,19 @@
 
 .video-progress {
   flex: 1;
-  height: 5px;
+  height: clamp(4px, 1vw, 8px);
   cursor: pointer;
   accent-color: var(--accent);
   min-width: 80px;
 }
 
 .video-time {
-  font-size: 12px;
+  font-size: var(--size-body);
   font-family: var(--font-body);
   color: var(--color-body);
   opacity: .7;
   white-space: nowrap;
-  min-width: 70px;
+  min-width: auto;
 }
 
 .video-volume-wrapper {
@@ -697,8 +697,8 @@
 }
 
 .video-volume {
-  width: 80px;
-  height: 4px;
+  width: clamp(60px, 15vw, 100px);
+  height: clamp(3px, 0.8vw, 6px);
   cursor: pointer;
   accent-color: var(--accent);
 }
@@ -710,7 +710,7 @@
 }
 
 .video-select-group label {
-  font-size: 13px;
+  font-size: var(--size-body);
   font-family: var(--font-body);
   color: var(--color-body);
   opacity: .8;
@@ -718,11 +718,11 @@
 }
 
 .video-select-group select {
-  padding: 6px 10px;
+  padding: clamp(4px, 1vw, 8px) clamp(8px, 2vw, 12px);
   border: 1px solid rgba(128, 128, 128, .2);
   border-radius: var(--radius-sm);
   font-family: inherit;
-  font-size: 13px;
+  font-size: var(--size-body);
   background: var(--bg);
   color: var(--color-body);
   cursor: pointer;
@@ -745,10 +745,6 @@
   }
 
   .video-controls-row {
-    gap: 10px;
-  }
-
-  .video-volume {
-    width: 60px;
+    gap: 8px;
   }
 }
