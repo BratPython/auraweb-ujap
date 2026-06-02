@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import Landing from './components/landing/Landing'
 import Admin from './components/admin/Admin'
@@ -11,6 +11,7 @@ import AdminInvoiceSettings from './components/admin/AdminInvoiceSettings'
 import AdminOrders from './components/admin/AdminOrders'
 import AdminCoupons from './components/admin/AdminCoupons'
 import LoadingSpinner from './components/ui/LoadingSpinner'
+import TangramLoader from './components/tangram/TangramLoader'
 import { AdminProvider } from './hooks/useAdminMode'
 import { useTheme } from './hooks/useTheme'
 import { ShopProvider } from './hooks/useShop'
@@ -21,8 +22,20 @@ import FiscalInvoicePage from './components/shop/FiscalInvoicePage'
 import MyInvoicesPage from './components/shop/MyInvoicesPage'
 import './styles/index.css'
 
+const LOADING_DURATION = 5000
+
 function AppRoutes() {
   const { themeSettings, setThemeSettings, activeMode, setActiveMode } = useTheme()
+  const [showLoader, setShowLoader] = useState(true)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowLoader(false), LOADING_DURATION)
+    return () => clearTimeout(timer)
+  }, [])
+
+  if (showLoader) {
+    return <TangramLoader />
+  }
 
   if (!themeSettings) {
     return <LoadingSpinner message="Cargando tema..." />

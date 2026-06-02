@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { getWebpUrl } from '../../utils/imageOptimizer'
 
 export default function ImageWithLoader({
   src,
@@ -6,21 +7,26 @@ export default function ImageWithLoader({
   className,
   wrapperClassName,
   loading = 'lazy',
+  noWebp = false,
 }) {
   const [loaded, setLoaded] = useState(false)
   const [errored, setErrored] = useState(false)
   const imgRef = useRef(null)
 
+  const displaySrc = useMemo(() => {
+    if (noWebp) return src
+    return getWebpUrl(src)
+  }, [src, noWebp])
+
   useEffect(() => {
     setLoaded(false)
     setErrored(false)
-  }, [src])
+  }, [displaySrc])
 
   useEffect(() => {
     const img = imgRef.current
-    if (!img || !src) return
+    if (!img || !displaySrc) return
 
-    // If the browser already has the image cached, onLoad may not fire again.
     if (img.complete) {
       if (img.naturalWidth > 0) {
         setLoaded(true)
@@ -29,7 +35,7 @@ export default function ImageWithLoader({
         setErrored(true)
       }
     }
-  }, [src])
+  }, [displaySrc])
 
   return (
     <div className={`image-loader-wrap ${wrapperClassName || ''} ${loaded ? 'is-loaded' : ''}`}>
@@ -37,7 +43,7 @@ export default function ImageWithLoader({
       {errored && <span className="image-loader-error" aria-hidden="true">✕</span>}
       <img
         ref={imgRef}
-        src={src}
+        src={displaySrc}
         alt={alt}
         className={className}
         loading={loading}

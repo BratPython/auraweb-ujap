@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react'
 import Modal from '../layout/Modal'
 import { SUB_CATEGORIAS_BOLSOS, SUB_CATEGORIAS_ACCESORIOS } from '../../config/constants'
+import ImageCropperModal from '../ui/ImageCropperModal'
 
 export default function AddProductModal({ activeTab, onClose, onSubmit }) {
   const allSubcategories = [...SUB_CATEGORIAS_BOLSOS, ...SUB_CATEGORIAS_ACCESORIOS]
@@ -13,13 +14,45 @@ export default function AddProductModal({ activeTab, onClose, onSubmit }) {
   const [formSubcategory, setFormSubcategory] = useState(initialSubcategory)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [status, setStatus] = useState(null)
+  const [cropperOpen, setCropperOpen] = useState(false)
+  const [cropperSrc, setCropperSrc] = useState('')
+  const [cropperFileName, setCropperFileName] = useState('')
+  const [pendingFile, setPendingFile] = useState(null)
   const fileInputRef = useRef(null)
+
+  function handleFileChange(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      setCropperSrc(reader.result)
+      setCropperFileName(file.name)
+      setCropperOpen(true)
+    }
+    reader.readAsDataURL(file)
+    e.target.value = null
+  }
+
+  function handleCropConfirm(croppedFile) {
+    setPendingFile(croppedFile)
+    setCropperOpen(false)
+    setCropperSrc('')
+    setCropperFileName('')
+  }
+
+  function handleCropCancel() {
+    setCropperOpen(false)
+    setCropperSrc('')
+    setCropperFileName('')
+    setPendingFile(null)
+    if (fileInputRef.current) fileInputRef.current.value = null
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
     if (!formName || !formPrice) return
 
-    const file = fileInputRef.current?.files?.[0]
+    const file = pendingFile || fileInputRef.current?.files?.[0]
     if (!file) {
       setStatus({ type: 'error', message: 'Selecciona una imagen para el producto' })
       setTimeout(() => setStatus(null), 1000)
@@ -42,6 +75,7 @@ export default function AddProductModal({ activeTab, onClose, onSubmit }) {
       setFormDesc('')
       setFormPrice('')
       setFormDiscount('0')
+      setPendingFile(null)
       if (fileInputRef.current) fileInputRef.current.value = null
       setStatus({ type: 'success', message: 'Producto guardado' })
       setTimeout(() => {
@@ -61,7 +95,8 @@ export default function AddProductModal({ activeTab, onClose, onSubmit }) {
   }
 
   return (
-    <Modal onClose={onClose}>
+    <>
+      <Modal onClose={onClose}>
       {status ? (
         <div className="status-modal-inline">
           <div className={`status-modal-card ${status.type}`}>
@@ -154,7 +189,8 @@ export default function AddProductModal({ activeTab, onClose, onSubmit }) {
 
           <div className="form-group">
             <label>Imagen Portada *</label>
-            <input type="file" ref={fileInputRef} accept="image/*" required className="file-input" />
+            <input type="file" ref={fileInputRef} accept="image/*" onChange={handleFileChange} className="file-input" />
+            {pendingFile && <p style={{ fontSize: 12, color: 'var(--accent)', margin: '4px 0 0' }}>Recorte listo: {pendingFile.name}</p>}
           </div>
 
           <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '10px' }}>
@@ -163,5 +199,15 @@ export default function AddProductModal({ activeTab, onClose, onSubmit }) {
         </form>
       )}
     </Modal>
+
+    {cropperOpen && (
+      <ImageCropperModal
+        imageSrc={cropperSrc}
+        fileName={cropperFileName}
+        onConfirm={handleCropConfirm}
+        onCancel={handleCropCancel}
+      />
+    )}
+    </>
   )
 }

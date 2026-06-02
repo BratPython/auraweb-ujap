@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../supabaseClient'
 import Header from '../layout/Header'
@@ -11,6 +11,7 @@ import ImageWithLoader from '../ui/ImageWithLoader'
 import { useBcvRate } from '../../hooks/useBcvRate'
 import ConfirmModal from '../layout/ConfirmModal'
 import { useShop } from '../../hooks/useShop'
+import ImageCropperModal from '../ui/ImageCropperModal'
 
 function normalizeColorVariants(rawVariants) {
   if (!Array.isArray(rawVariants)) return []
@@ -58,6 +59,10 @@ export default function ProductDetail({ activeMode, onModeChange }) {
   const [activeAdminVariantId, setActiveAdminVariantId] = useState('')
   const [selectedCustomerColorId, setSelectedCustomerColorId] = useState('')
   const [variantImageUploading, setVariantImageUploading] = useState(false)
+  const [cropperOpen, setCropperOpen] = useState(false)
+  const [cropperSrc, setCropperSrc] = useState('')
+  const [cropperFileName, setCropperFileName] = useState('')
+  const cropperCallbackRef = useRef(null)
 
   const discount = Math.max(0, Math.min(99, Number.parseInt(product?.is_descuento, 10) || 0))
   const basePrice = Number.parseFloat(product?.precio) || 0
@@ -249,7 +254,38 @@ export default function ProductDetail({ activeMode, onModeChange }) {
     setProduct((prev) => (prev ? { ...prev, theme_config: nextThemeConfig } : prev))
   }
 
+  function openCropper(file, callback) {
+    const reader = new FileReader()
+    reader.onload = () => {
+      setCropperSrc(reader.result)
+      setCropperFileName(file.name)
+      cropperCallbackRef.current = callback
+      setCropperOpen(true)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  function handleCropConfirm(croppedFile) {
+    setCropperOpen(false)
+    setCropperSrc('')
+    setCropperFileName('')
+    const cb = cropperCallbackRef.current
+    cropperCallbackRef.current = null
+    if (cb) cb(croppedFile)
+  }
+
+  function handleCropCancel() {
+    setCropperOpen(false)
+    setCropperSrc('')
+    setCropperFileName('')
+    cropperCallbackRef.current = null
+  }
+
   async function handleAddImage(file) {
+    openCropper(file, (croppedFile) => uploadGalleryImage(croppedFile))
+  }
+
+  async function uploadGalleryImage(file) {
     setImageUploading(true)
     try {
       const newImageUrl = await uploadImageToStorage(file)
@@ -333,7 +369,10 @@ export default function ProductDetail({ activeMode, onModeChange }) {
 
   async function handleAddColorVariantImage(variantId, file) {
     if (!file) return
+    openCropper(file, (croppedFile) => uploadVariantImage(variantId, croppedFile))
+  }
 
+  async function uploadVariantImage(variantId, file) {
     setVariantImageUploading(true)
     try {
       const imageUrl = await uploadImageToStorage(file)
@@ -772,6 +811,15 @@ export default function ProductDetail({ activeMode, onModeChange }) {
         onConfirm={confirmDeleteImage}
         onCancel={() => setConfirmDeleteImageIdx(null)}
       />
+
+      {cropperOpen && (
+        <ImageCropperModal
+          imageSrc={cropperSrc}
+          fileName={cropperFileName}
+          onConfirm={handleCropConfirm}
+          onCancel={handleCropCancel}
+        />
+      )}
     </div>
   )
 }

@@ -150,7 +150,7 @@ export default function DiscoverSection() {
 
   useEffect(() => {
     function handleResize() {
-      const next = window.innerWidth <= 720 ? 2 : 3
+      const next = window.innerWidth <= 480 ? 1 : window.innerWidth <= 720 ? 2 : 3
       setItemsPerView(next)
     }
     handleResize()

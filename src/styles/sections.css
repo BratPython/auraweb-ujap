@@ -332,6 +332,7 @@
   opacity: .7;
 }
 
+
 @media (max-width: 720px) {
   .discover-carousel {
     grid-template-columns: repeat(2, minmax(170px, 1fr));
@@ -363,6 +364,38 @@
     max-height: calc(90vh - 170px);
     padding: 12px;
     gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .discover-carousel {
+    grid-template-columns: 1fr;
+    gap: 0;
+    place-items: center;
+  }
+
+  .discover-carousel-wrapper {
+    max-width: 100%;
+    padding: 0 16px;
+  }
+
+  .discover-card {
+    max-width: 360px;
+    width: 100%;
+    justify-self: center;
+  }
+
+  .discover-arrow {
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
+  }
+
+  .discover-arrow.left {
+    left: 4px;
+  }
+  .discover-arrow.right {
+    right: 4px;
   }
 }
 
